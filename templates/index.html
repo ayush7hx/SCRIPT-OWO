@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OWO Auto-Farmer Dashboard</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #58a6ff;
+      letter-spacing: -0.5px;
+    }
+
+    header p {
+      color: #8b949e;
+      margin-top: 6px;
+      font-size: 0.9rem;
+    }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+
+    .status-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .dot-online   { background: #3fb950; box-shadow: 0 0 8px #3fb950; animation: pulse 2s infinite; }
+    .dot-waiting  { background: #f0883e; box-shadow: 0 0 8px #f0883e; animation: pulse 2s infinite; }
+    .dot-error    { background: #f85149; }
+    .dot-notoken  { background: #8b949e; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .status-text {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      max-width: 900px;
+      margin: 0 auto 32px;
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 20px;
+    }
+
+    .card-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #8b949e;
+      margin-bottom: 8px;
+    }
+
+    .card-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #58a6ff;
+    }
+
+    .card-sub {
+      font-size: 0.8rem;
+      color: #8b949e;
+      margin-top: 4px;
+    }
+
+    .section {
+      max-width: 900px;
+      margin: 0 auto 24px;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #8b949e;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .cmd-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .cmd-table th,
+    .cmd-table td {
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 1px solid #21262d;
+      font-size: 0.88rem;
+    }
+
+    .cmd-table th {
+      color: #8b949e;
+      font-weight: 600;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .cmd-table tr:last-child td { border-bottom: none; }
+
+    .cmd-table tr:hover td { background: #1c2128; }
+
+    .bar-wrap {
+      background: #21262d;
+      border-radius: 4px;
+      height: 6px;
+      min-width: 80px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: #58a6ff;
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+
+    .notice {
+      max-width: 900px;
+      margin: 0 auto 24px;
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-left: 4px solid #f0883e;
+      border-radius: 8px;
+      padding: 16px 20px;
+    }
+
+    .notice h3 { color: #f0883e; margin-bottom: 8px; font-size: 0.95rem; }
+    .notice p, .notice li { color: #9ca3af; font-size: 0.85rem; line-height: 1.6; }
+    .notice ol { padding-left: 20px; }
+    .notice code {
+      background: #111827;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      color: #58a6ff;
+    }
+
+    .error-box {
+      max-width: 900px;
+      margin: 0 auto 24px;
+      background: #2d1218;
+      border: 1px solid #f85149;
+      border-radius: 8px;
+      padding: 14px 18px;
+      color: #f85149;
+      font-size: 0.85rem;
+    }
+
+    footer {
+      text-align: center;
+      color: #484f58;
+      font-size: 0.75rem;
+      margin-top: 32px;
+    }
+
+    #uptime { font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>OWO Auto-Farmer</h1>
+    <p>24/7 Fully Automatic Discord OWO Bot Farmer</p>
+  </header>
+
+  <div class="status-bar">
+    <div class="status-dot" id="dot"></div>
+    <span class="status-text" id="status-text">Loading...</span>
+  </div>
+
+  <div id="no-token-notice" class="notice" style="display:none">
+    <h3>Setup Required</h3>
+    <p>Set these two secrets in the Replit <strong>Secrets</strong> tab, then restart:</p>
+    <ol style="margin-top:8px">
+      <li><code>DISCORD_TOKEN</code> — your Discord account token</li>
+      <li><code>CHANNEL_ID</code> — the numeric ID of the channel to farm in</li>
+    </ol>
+    <p style="margin-top:8px">After saving secrets, click <strong>Restart</strong> in the workflow.</p>
+  </div>
+
+  <div id="error-box" class="error-box" style="display:none">
+    Error: <span id="error-msg"></span>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div class="card-label">Total Commands</div>
+      <div class="card-value" id="total">0</div>
+      <div class="card-sub">since start</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Estimated Earnings</div>
+      <div class="card-value" id="earnings">0</div>
+      <div class="card-sub">cowony</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Daily Rate</div>
+      <div class="card-value" id="daily">0</div>
+      <div class="card-sub">cowony / day</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Uptime</div>
+      <div class="card-value" id="uptime">—</div>
+      <div class="card-sub">hrs : min : sec</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="card">
+      <div class="card-label" style="margin-bottom:4px">Account</div>
+      <span id="account" style="color:#e6edf3;font-size:1rem">—</span>
+      &nbsp;&nbsp;
+      <span style="color:#8b949e;font-size:0.8rem">Channel: <span id="channel">—</span></span>
+      <div style="margin-top:6px;font-size:0.75rem;color:#484f58">Last command: <span id="last-cmd">—</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Command Breakdown</div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <table class="cmd-table">
+        <thead>
+          <tr>
+            <th>Command</th>
+            <th>Count</th>
+            <th>Cooldown</th>
+            <th style="width:160px">Activity</th>
+          </tr>
+        </thead>
+        <tbody id="cmd-body">
+          <tr><td colspan="4" style="color:#484f58;text-align:center;padding:20px">Waiting for bot to start...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer>Auto-refreshes every 3 seconds &nbsp;·&nbsp; Started: <span id="started">—</span></footer>
+
+<script>
+  const COOLDOWNS = {
+    "Battle":"1 min","Pray":"5 min","Work":"15 min","Hunt":"30 min",
+    "Fish":"30 min","Crime":"30 min","Rob":"30 min","Slots":"10 min",
+    "Daily":"12 hrs","Weekly":"7 days"
+  };
+
+  function fmt(n) { return n.toLocaleString(); }
+
+  function fmtUptime(s) {
+    if (!s) return "—";
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  }
+
+  function setStatus(status, error) {
+    const dot  = document.getElementById("dot");
+    const text = document.getElementById("status-text");
+    const noToken = document.getElementById("no-token-notice");
+    const errBox  = document.getElementById("error-box");
+    const errMsg  = document.getElementById("error-msg");
+
+    dot.className = "status-dot";
+    noToken.style.display = "none";
+    errBox.style.display  = "none";
+
+    const map = {
+      online:       ["dot-online",  "Online — Farming Active"],
+      connecting:   ["dot-waiting", "Connecting to Discord..."],
+      reconnecting: ["dot-waiting", "Reconnecting..."],
+      waiting:      ["dot-waiting", "Starting up..."],
+      no_token:     ["dot-notoken", "Setup Required"],
+      error:        ["dot-error",   "Error"],
+    };
+
+    const [cls, label] = map[status] || ["dot-notoken", status];
+    dot.classList.add(cls);
+    text.textContent = label;
+
+    if (status === "no_token") noToken.style.display = "block";
+    if (status === "error" && error) {
+      errBox.style.display = "block";
+      errMsg.textContent = error;
+    }
+  }
+
+  async function refresh() {
+    try {
+      const res  = await fetch("/api/stats");
+      const data = await res.json();
+
+      setStatus(data.status, data.last_error);
+
+      document.getElementById("total").textContent    = fmt(data.total_commands);
+      document.getElementById("earnings").textContent = fmt(data.estimated_earnings);
+      document.getElementById("daily").textContent    = fmt(data.daily_earnings);
+      document.getElementById("uptime").textContent   = fmtUptime(data.uptime_seconds);
+      document.getElementById("account").textContent  = data.logged_in_as || "—";
+      document.getElementById("last-cmd").textContent = data.last_command_time || "—";
+      document.getElementById("started").textContent  = data.start_time || "—";
+
+      const ch = data.channel_name ? `#${data.channel_name}` : (data.channel_id || "—");
+      document.getElementById("channel").textContent = ch;
+
+      const stats = data.command_stats || {};
+      const keys  = Object.keys(stats);
+      const maxVal = keys.length ? Math.max(...keys.map(k => stats[k])) : 1;
+
+      const tbody = document.getElementById("cmd-body");
+      if (keys.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="color:#484f58;text-align:center;padding:20px">
+          ${data.status === 'online' ? 'Waiting for first command...' : 'Waiting for bot to start...'}
+        </td></tr>`;
+      } else {
+        const sorted = keys.sort((a,b) => stats[b] - stats[a]);
+        tbody.innerHTML = sorted.map(name => {
+          const pct = Math.round((stats[name] / maxVal) * 100);
+          return `<tr>
+            <td style="color:#e6edf3;font-weight:500">owo ${name.toLowerCase()}</td>
+            <td style="color:#3fb950;font-weight:600">${fmt(stats[name])}</td>
+            <td style="color:#8b949e">${COOLDOWNS[name] || '—'}</td>
+            <td><div class="bar-wrap"><div class="bar-fill" style="width:${pct}%"></div></div></td>
+          </tr>`;
+        }).join("");
+      }
+    } catch(e) {
+      setStatus("error", "Cannot reach server");
+    }
+  }
+
+  refresh();
+  setInterval(refresh, 3000);
+</script>
+</body>
+</html>
