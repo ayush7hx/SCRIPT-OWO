@@ -236,8 +236,7 @@ def run_bot():
         state["status"]     = "connecting"
         state["last_error"] = ""
 
-        intents = discord.Intents.default()
-        client  = discord.Client(intents=intents)
+        client = discord.Client()
 
         @client.event
         async def on_ready():
@@ -287,7 +286,7 @@ def run_bot():
             print("[BOT] Disconnected — reconnecting...")
 
         try:
-            client.run(TOKEN, bot=False, reconnect=True)
+            client.run(TOKEN, reconnect=True)
         except discord.LoginFailure:
             state["status"]     = "error"
             state["last_error"] = "Invalid token — double check DISCORD_TOKEN"
