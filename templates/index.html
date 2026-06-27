@@ -3,370 +3,375 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OWO Auto-Farmer Dashboard</title>
+  <title>OWO Auto-Farmer</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       background: #0d1117;
       color: #e6edf3;
-      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       min-height: 100vh;
-      padding: 24px 16px;
+      padding: 24px 16px 48px;
     }
 
-    header {
-      text-align: center;
-      margin-bottom: 32px;
-    }
-
+    /* ── Header ─────────────────────────────────────── */
+    header { text-align: center; margin-bottom: 28px; }
     header h1 {
-      font-size: 2rem;
-      font-weight: 700;
-      color: #58a6ff;
+      font-size: 1.9rem; font-weight: 800;
+      background: linear-gradient(135deg, #58a6ff, #3fb950);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       letter-spacing: -0.5px;
     }
+    header p { color: #6e7681; margin-top: 5px; font-size: 0.85rem; }
 
-    header p {
-      color: #8b949e;
-      margin-top: 6px;
-      font-size: 0.9rem;
-    }
-
+    /* ── Status pill ─────────────────────────────────── */
     .status-bar {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 32px;
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; margin-bottom: 28px;
     }
-
-    .status-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      flex-shrink: 0;
+    .dot {
+      width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0;
     }
+    .dot-online   { background:#3fb950; box-shadow:0 0 7px #3fb950; animation:blink 2s infinite; }
+    .dot-pending  { background:#f0883e; box-shadow:0 0 7px #f0883e; animation:blink 1.2s infinite; }
+    .dot-error    { background:#f85149; }
+    .dot-off      { background:#484f58; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .status-label { font-size:.92rem; font-weight:600; }
 
-    .dot-online   { background: #3fb950; box-shadow: 0 0 8px #3fb950; animation: pulse 2s infinite; }
-    .dot-waiting  { background: #f0883e; box-shadow: 0 0 8px #f0883e; animation: pulse 2s infinite; }
-    .dot-error    { background: #f85149; }
-    .dot-notoken  { background: #8b949e; }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
-    }
-
-    .status-text {
-      font-size: 0.95rem;
-      font-weight: 600;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      max-width: 900px;
-      margin: 0 auto 32px;
-    }
-
-    .card {
-      background: #161b22;
-      border: 1px solid #30363d;
-      border-radius: 12px;
-      padding: 20px;
-    }
-
-    .card-label {
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #8b949e;
-      margin-bottom: 8px;
-    }
-
-    .card-value {
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: #58a6ff;
-    }
-
-    .card-sub {
-      font-size: 0.8rem;
-      color: #8b949e;
-      margin-top: 4px;
-    }
-
-    .section {
-      max-width: 900px;
-      margin: 0 auto 24px;
-    }
-
-    .section-title {
-      font-size: 1rem;
-      font-weight: 600;
-      color: #8b949e;
-      margin-bottom: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .cmd-table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .cmd-table th,
-    .cmd-table td {
-      padding: 10px 14px;
-      text-align: left;
-      border-bottom: 1px solid #21262d;
-      font-size: 0.88rem;
-    }
-
-    .cmd-table th {
-      color: #8b949e;
-      font-weight: 600;
-      font-size: 0.75rem;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-    }
-
-    .cmd-table tr:last-child td { border-bottom: none; }
-
-    .cmd-table tr:hover td { background: #1c2128; }
-
-    .bar-wrap {
-      background: #21262d;
-      border-radius: 4px;
-      height: 6px;
-      min-width: 80px;
-    }
-
-    .bar-fill {
-      height: 100%;
-      background: #58a6ff;
-      border-radius: 4px;
-      transition: width 0.6s ease;
-    }
-
+    /* ── Notices ─────────────────────────────────────── */
     .notice {
-      max-width: 900px;
-      margin: 0 auto 24px;
-      background: #1f2937;
-      border: 1px solid #374151;
-      border-left: 4px solid #f0883e;
-      border-radius: 8px;
-      padding: 16px 20px;
+      max-width:880px; margin:0 auto 22px; border-radius:10px;
+      padding:15px 20px; border:1px solid;
     }
-
-    .notice h3 { color: #f0883e; margin-bottom: 8px; font-size: 0.95rem; }
-    .notice p, .notice li { color: #9ca3af; font-size: 0.85rem; line-height: 1.6; }
-    .notice ol { padding-left: 20px; }
+    .notice-warn {
+      background:#1f1a0e; border-color:#f0883e;
+      border-left:4px solid #f0883e;
+    }
+    .notice-err {
+      background:#1a0d0d; border-color:#f85149;
+      border-left:4px solid #f85149;
+    }
+    .notice h3 { font-size:.9rem; margin-bottom:7px; }
+    .notice-warn h3 { color:#f0883e; }
+    .notice-err  h3 { color:#f85149; }
+    .notice p, .notice li { color:#9ca3af; font-size:.83rem; line-height:1.7; }
+    .notice ol { padding-left:18px; }
     .notice code {
-      background: #111827;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: monospace;
-      color: #58a6ff;
+      background:#111827; padding:2px 6px; border-radius:4px;
+      font-family:monospace; color:#58a6ff; font-size:.82rem;
     }
 
-    .error-box {
-      max-width: 900px;
-      margin: 0 auto 24px;
-      background: #2d1218;
-      border: 1px solid #f85149;
-      border-radius: 8px;
-      padding: 14px 18px;
-      color: #f85149;
-      font-size: 0.85rem;
+    /* ── Stat grid ───────────────────────────────────── */
+    .grid {
+      display:grid;
+      grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+      gap:14px; max-width:880px; margin:0 auto 20px;
+    }
+    .card {
+      background:#161b22; border:1px solid #21262d;
+      border-radius:12px; padding:18px 20px;
+    }
+    .card-label {
+      font-size:.7rem; text-transform:uppercase;
+      letter-spacing:1.1px; color:#6e7681; margin-bottom:7px;
+    }
+    .card-value {
+      font-size:1.75rem; font-weight:800;
+      font-variant-numeric:tabular-nums;
+    }
+    .card-sub { font-size:.75rem; color:#6e7681; margin-top:3px; }
+    .blue  { color:#58a6ff; }
+    .green { color:#3fb950; }
+    .gold  { color:#e3b341; }
+    .purple{ color:#bc8cff; }
+
+    /* ── Daily target bar ────────────────────────────── */
+    .target-wrap {
+      max-width:880px; margin:0 auto 20px;
+    }
+    .target-card {
+      background:#161b22; border:1px solid #21262d;
+      border-radius:12px; padding:18px 22px;
+    }
+    .target-header {
+      display:flex; justify-content:space-between;
+      align-items:baseline; margin-bottom:12px;
+    }
+    .target-title { font-size:.85rem; font-weight:600; color:#e6edf3; }
+    .target-pct   { font-size:1.4rem; font-weight:800; color:#e3b341; }
+    .progress-bg  {
+      background:#21262d; border-radius:999px;
+      height:10px; overflow:hidden; margin-bottom:8px;
+    }
+    .progress-fill {
+      height:100%;
+      background: linear-gradient(90deg,#3fb950,#58a6ff);
+      border-radius:999px;
+      transition: width .8s ease;
+    }
+    .target-sub {
+      display:flex; justify-content:space-between;
+      font-size:.75rem; color:#6e7681;
     }
 
-    footer {
-      text-align: center;
-      color: #484f58;
-      font-size: 0.75rem;
-      margin-top: 32px;
+    /* ── Info bar ────────────────────────────────────── */
+    .info-bar {
+      max-width:880px; margin:0 auto 20px;
     }
+    .info-card {
+      background:#161b22; border:1px solid #21262d;
+      border-radius:12px; padding:14px 20px;
+      display:flex; flex-wrap:wrap; gap:18px; align-items:center;
+    }
+    .info-item { font-size:.83rem; }
+    .info-label { color:#6e7681; margin-right:5px; }
+    .info-val   { color:#e6edf3; font-weight:600; }
 
-    #uptime { font-variant-numeric: tabular-nums; }
+    /* ── Command table ───────────────────────────────── */
+    .section { max-width:880px; margin:0 auto 20px; }
+    .section-title {
+      font-size:.72rem; text-transform:uppercase;
+      letter-spacing:1.2px; color:#6e7681; margin-bottom:10px;
+    }
+    table { width:100%; border-collapse:collapse; }
+    th, td {
+      padding:9px 14px; text-align:left;
+      border-bottom:1px solid #21262d; font-size:.83rem;
+    }
+    th {
+      color:#6e7681; font-weight:600;
+      font-size:.7rem; text-transform:uppercase; letter-spacing:.9px;
+    }
+    tr:last-child td { border-bottom:none; }
+    tr:hover td { background:#1c2128; }
+    .bar-bg   { background:#21262d; border-radius:4px; height:5px; min-width:70px; }
+    .bar-fill { height:100%; background:#58a6ff; border-radius:4px; transition:width .6s; }
+    .badge {
+      display:inline-block; padding:2px 8px; border-radius:99px;
+      font-size:.68rem; font-weight:700; letter-spacing:.5px;
+    }
+    .badge-grind  { background:#0f2d1a; color:#3fb950; border:1px solid #3fb95033; }
+    .badge-gamble { background:#1a0e2d; color:#bc8cff; border:1px solid #bc8cff33; }
+    .badge-bonus  { background:#2d1a0e; color:#e3b341; border:1px solid #e3b34133; }
+    .badge-sell   { background:#0e1f2d; color:#58a6ff; border:1px solid #58a6ff33; }
+
+    footer { text-align:center; color:#373e47; font-size:.72rem; margin-top:32px; }
   </style>
 </head>
 <body>
 
-  <header>
-    <h1>OWO Auto-Farmer</h1>
-    <p>24/7 Fully Automatic Discord OWO Bot Farmer</p>
-  </header>
+<header>
+  <h1>OWO Auto-Farmer</h1>
+  <p>24/7 Fully Automatic &nbsp;·&nbsp; All Commands &nbsp;·&nbsp; Max Cowony</p>
+</header>
 
-  <div class="status-bar">
-    <div class="status-dot" id="dot"></div>
-    <span class="status-text" id="status-text">Loading...</span>
-  </div>
+<!-- Status -->
+<div class="status-bar">
+  <div class="dot" id="dot"></div>
+  <span class="status-label" id="status-text">Loading...</span>
+</div>
 
-  <div id="no-token-notice" class="notice" style="display:none">
-    <h3>Setup Required</h3>
-    <p>Set these two secrets in the Replit <strong>Secrets</strong> tab, then restart:</p>
-    <ol style="margin-top:8px">
-      <li><code>DISCORD_TOKEN</code> — your Discord account token</li>
-      <li><code>CHANNEL_ID</code> — the numeric ID of the channel to farm in</li>
-    </ol>
-    <p style="margin-top:8px">After saving secrets, click <strong>Restart</strong> in the workflow.</p>
-  </div>
+<!-- Notices -->
+<div id="notice-notoken" class="notice notice-warn" style="display:none">
+  <h3>Setup Required — Enter Your Secrets</h3>
+  <p>Open the <strong>Secrets</strong> tab (lock icon) in Replit and add:</p>
+  <ol style="margin-top:8px">
+    <li><code>DISCORD_TOKEN</code> — your Discord account token</li>
+    <li><code>CHANNEL_ID</code> — numeric ID of the OWO farming channel</li>
+  </ol>
+  <p style="margin-top:8px">After saving, click <strong>Restart</strong> on the workflow. Bot will start automatically.</p>
+</div>
+<div id="notice-error" class="notice notice-err" style="display:none">
+  <h3>Error</h3>
+  <p id="err-msg"></p>
+</div>
 
-  <div id="error-box" class="error-box" style="display:none">
-    Error: <span id="error-msg"></span>
-  </div>
-
-  <div class="grid">
-    <div class="card">
-      <div class="card-label">Total Commands</div>
-      <div class="card-value" id="total">0</div>
-      <div class="card-sub">since start</div>
+<!-- Daily target -->
+<div class="target-wrap">
+  <div class="target-card">
+    <div class="target-header">
+      <span class="target-title">Daily Target Progress &nbsp;<span style="color:#6e7681;font-size:.75rem;font-weight:400">(est. ~75,000 cowony/day)</span></span>
+      <span class="target-pct" id="target-pct">0%</span>
     </div>
-    <div class="card">
-      <div class="card-label">Estimated Earnings</div>
-      <div class="card-value" id="earnings">0</div>
-      <div class="card-sub">cowony</div>
+    <div class="progress-bg">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
     </div>
-    <div class="card">
-      <div class="card-label">Daily Rate</div>
-      <div class="card-value" id="daily">0</div>
-      <div class="card-sub">cowony / day</div>
-    </div>
-    <div class="card">
-      <div class="card-label">Uptime</div>
-      <div class="card-value" id="uptime">—</div>
-      <div class="card-sub">hrs : min : sec</div>
+    <div class="target-sub">
+      <span id="earned-label">0 cowony earned</span>
+      <span id="rate-label">Rate: 0 / day</span>
     </div>
   </div>
+</div>
 
-  <div class="section">
-    <div class="card">
-      <div class="card-label" style="margin-bottom:4px">Account</div>
-      <span id="account" style="color:#e6edf3;font-size:1rem">—</span>
-      &nbsp;&nbsp;
-      <span style="color:#8b949e;font-size:0.8rem">Channel: <span id="channel">—</span></span>
-      <div style="margin-top:6px;font-size:0.75rem;color:#484f58">Last command: <span id="last-cmd">—</span></div>
-    </div>
+<!-- Stat cards -->
+<div class="grid">
+  <div class="card">
+    <div class="card-label">Commands Sent</div>
+    <div class="card-value blue" id="total">0</div>
+    <div class="card-sub">since start</div>
   </div>
-
-  <div class="section">
-    <div class="section-title">Command Breakdown</div>
-    <div class="card" style="padding:0;overflow:hidden">
-      <table class="cmd-table">
-        <thead>
-          <tr>
-            <th>Command</th>
-            <th>Count</th>
-            <th>Cooldown</th>
-            <th style="width:160px">Activity</th>
-          </tr>
-        </thead>
-        <tbody id="cmd-body">
-          <tr><td colspan="4" style="color:#484f58;text-align:center;padding:20px">Waiting for bot to start...</td></tr>
-        </tbody>
-      </table>
-    </div>
+  <div class="card">
+    <div class="card-label">Cowony Earned</div>
+    <div class="card-value green" id="earned">0</div>
+    <div class="card-sub">estimated total</div>
   </div>
+  <div class="card">
+    <div class="card-label">Daily Rate</div>
+    <div class="card-value gold" id="daily">0</div>
+    <div class="card-sub">cowony / day</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Uptime</div>
+    <div class="card-value purple" id="uptime">—</div>
+    <div class="card-sub">hh : mm : ss</div>
+  </div>
+</div>
 
-  <footer>Auto-refreshes every 3 seconds &nbsp;·&nbsp; Started: <span id="started">—</span></footer>
+<!-- Info bar -->
+<div class="info-bar">
+  <div class="info-card">
+    <div class="info-item"><span class="info-label">Account:</span><span class="info-val" id="account">—</span></div>
+    <div class="info-item"><span class="info-label">Channel:</span><span class="info-val" id="channel">—</span></div>
+    <div class="info-item"><span class="info-label">Last cmd:</span><span class="info-val" id="last-cmd">—</span></div>
+    <div class="info-item"><span class="info-label">Started:</span><span class="info-val" id="started">—</span></div>
+  </div>
+</div>
+
+<!-- Command breakdown -->
+<div class="section">
+  <div class="section-title">Command Breakdown</div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <table>
+      <thead>
+        <tr>
+          <th>Command</th>
+          <th>Type</th>
+          <th>Count</th>
+          <th>Cooldown</th>
+          <th style="width:140px">Activity</th>
+        </tr>
+      </thead>
+      <tbody id="cmd-body">
+        <tr><td colspan="5" style="color:#484f58;text-align:center;padding:22px">Waiting for bot to connect...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<footer>Auto-refreshes every 3s &nbsp;·&nbsp; OWO Auto-Farmer</footer>
 
 <script>
-  const COOLDOWNS = {
-    "Battle":"1 min","Pray":"5 min","Work":"15 min","Hunt":"30 min",
-    "Fish":"30 min","Crime":"30 min","Rob":"30 min","Slots":"10 min",
-    "Daily":"12 hrs","Weekly":"7 days"
-  };
+const CMD_META = {
+  Battle:   { badge:'GRIND',  cls:'badge-grind',  cd:'1 min'  },
+  Pray:     { badge:'GRIND',  cls:'badge-grind',  cd:'5 min'  },
+  Curse:    { badge:'GRIND',  cls:'badge-grind',  cd:'5 min'  },
+  Work:     { badge:'GRIND',  cls:'badge-grind',  cd:'15 min' },
+  Crime:    { badge:'GRIND',  cls:'badge-grind',  cd:'30 min' },
+  Hunt:     { badge:'GRIND',  cls:'badge-grind',  cd:'30 min' },
+  Fish:     { badge:'GRIND',  cls:'badge-grind',  cd:'30 min' },
+  Slots:    { badge:'GAMBLE', cls:'badge-gamble', cd:'10 min' },
+  Coinflip: { badge:'GAMBLE', cls:'badge-gamble', cd:'5 min'  },
+  Daily:    { badge:'BONUS',  cls:'badge-bonus',  cd:'12 hrs' },
+  Weekly:   { badge:'BONUS',  cls:'badge-bonus',  cd:'7 days' },
+  Sell:     { badge:'SELL',   cls:'badge-sell',   cd:'2 hrs'  },
+};
 
-  function fmt(n) { return n.toLocaleString(); }
+const STATUS_MAP = {
+  online:       { cls:'dot-online',  label:'Online — Farming Active' },
+  connecting:   { cls:'dot-pending', label:'Connecting to Discord...' },
+  reconnecting: { cls:'dot-pending', label:'Reconnecting...' },
+  waiting:      { cls:'dot-pending', label:'Starting up...' },
+  no_token:     { cls:'dot-off',     label:'Setup Required' },
+  error:        { cls:'dot-error',   label:'Error' },
+};
 
-  function fmtUptime(s) {
-    if (!s) return "—";
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const sec = s % 60;
-    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+function fmt(n)  { return Number(n).toLocaleString(); }
+function fmtTime(s) {
+  if (!s) return '—';
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), sec = s%60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+async function refresh() {
+  let data;
+  try {
+    const res = await fetch('/api/stats');
+    data = await res.json();
+  } catch(e) {
+    document.getElementById('status-text').textContent = 'Cannot reach server';
+    return;
   }
 
-  function setStatus(status, error) {
-    const dot  = document.getElementById("dot");
-    const text = document.getElementById("status-text");
-    const noToken = document.getElementById("no-token-notice");
-    const errBox  = document.getElementById("error-box");
-    const errMsg  = document.getElementById("error-msg");
+  // Status
+  const { cls, label } = STATUS_MAP[data.status] || { cls:'dot-off', label: data.status };
+  const dot = document.getElementById('dot');
+  dot.className = 'dot ' + cls;
+  document.getElementById('status-text').textContent = label;
 
-    dot.className = "status-dot";
-    noToken.style.display = "none";
-    errBox.style.display  = "none";
-
-    const map = {
-      online:       ["dot-online",  "Online — Farming Active"],
-      connecting:   ["dot-waiting", "Connecting to Discord..."],
-      reconnecting: ["dot-waiting", "Reconnecting..."],
-      waiting:      ["dot-waiting", "Starting up..."],
-      no_token:     ["dot-notoken", "Setup Required"],
-      error:        ["dot-error",   "Error"],
-    };
-
-    const [cls, label] = map[status] || ["dot-notoken", status];
-    dot.classList.add(cls);
-    text.textContent = label;
-
-    if (status === "no_token") noToken.style.display = "block";
-    if (status === "error" && error) {
-      errBox.style.display = "block";
-      errMsg.textContent = error;
-    }
+  // Notices
+  document.getElementById('notice-notoken').style.display = data.status === 'no_token' ? 'block' : 'none';
+  const errEl = document.getElementById('notice-error');
+  if (data.status === 'error' && data.last_error) {
+    errEl.style.display = 'block';
+    document.getElementById('err-msg').textContent = data.last_error;
+  } else {
+    errEl.style.display = 'none';
   }
 
-  async function refresh() {
-    try {
-      const res  = await fetch("/api/stats");
-      const data = await res.json();
+  // Target
+  const target  = data.daily_target || 75000;
+  const earned  = data.cowony_earned || 0;
+  const daily   = data.daily_rate   || 0;
+  const pct     = Math.min(Math.round(earned / target * 100), 100);
+  document.getElementById('target-pct').textContent     = pct + '%';
+  document.getElementById('progress-fill').style.width  = pct + '%';
+  document.getElementById('earned-label').textContent   = fmt(earned) + ' cowony earned';
+  document.getElementById('rate-label').textContent     = 'Rate: ' + fmt(daily) + ' / day';
 
-      setStatus(data.status, data.last_error);
+  // Stat cards
+  document.getElementById('total').textContent  = fmt(data.total_commands || 0);
+  document.getElementById('earned').textContent = fmt(earned);
+  document.getElementById('daily').textContent  = fmt(daily);
+  document.getElementById('uptime').textContent = fmtTime(data.uptime_seconds);
 
-      document.getElementById("total").textContent    = fmt(data.total_commands);
-      document.getElementById("earnings").textContent = fmt(data.estimated_earnings);
-      document.getElementById("daily").textContent    = fmt(data.daily_earnings);
-      document.getElementById("uptime").textContent   = fmtUptime(data.uptime_seconds);
-      document.getElementById("account").textContent  = data.logged_in_as || "—";
-      document.getElementById("last-cmd").textContent = data.last_command_time || "—";
-      document.getElementById("started").textContent  = data.start_time || "—";
+  // Info bar
+  document.getElementById('account').textContent  = data.logged_in_as || '—';
+  document.getElementById('channel').textContent  = data.channel_name ? '#' + data.channel_name : (data.channel_id || '—');
+  document.getElementById('last-cmd').textContent = data.last_command_time || '—';
+  document.getElementById('started').textContent  = data.start_time || '—';
 
-      const ch = data.channel_name ? `#${data.channel_name}` : (data.channel_id || "—");
-      document.getElementById("channel").textContent = ch;
+  // Command table
+  const stats  = data.command_stats || {};
+  const keys   = Object.keys(stats);
+  const maxVal = keys.length ? Math.max(...keys.map(k => stats[k])) : 1;
+  const tbody  = document.getElementById('cmd-body');
 
-      const stats = data.command_stats || {};
-      const keys  = Object.keys(stats);
-      const maxVal = keys.length ? Math.max(...keys.map(k => stats[k])) : 1;
-
-      const tbody = document.getElementById("cmd-body");
-      if (keys.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="color:#484f58;text-align:center;padding:20px">
-          ${data.status === 'online' ? 'Waiting for first command...' : 'Waiting for bot to start...'}
-        </td></tr>`;
-      } else {
-        const sorted = keys.sort((a,b) => stats[b] - stats[a]);
-        tbody.innerHTML = sorted.map(name => {
-          const pct = Math.round((stats[name] / maxVal) * 100);
-          return `<tr>
-            <td style="color:#e6edf3;font-weight:500">owo ${name.toLowerCase()}</td>
-            <td style="color:#3fb950;font-weight:600">${fmt(stats[name])}</td>
-            <td style="color:#8b949e">${COOLDOWNS[name] || '—'}</td>
-            <td><div class="bar-wrap"><div class="bar-fill" style="width:${pct}%"></div></div></td>
-          </tr>`;
-        }).join("");
-      }
-    } catch(e) {
-      setStatus("error", "Cannot reach server");
-    }
+  if (keys.length === 0) {
+    const msg = data.status === 'online' ? 'Sending first commands...' : 'Waiting for bot to connect...';
+    tbody.innerHTML = `<tr><td colspan="5" style="color:#484f58;text-align:center;padding:22px">${msg}</td></tr>`;
+    return;
   }
 
-  refresh();
-  setInterval(refresh, 3000);
+  const sorted = keys.slice().sort((a,b) => stats[b] - stats[a]);
+  tbody.innerHTML = sorted.map(name => {
+    const meta = CMD_META[name] || { badge:'CMD', cls:'badge-grind', cd:'—' };
+    const pct  = Math.round(stats[name] / maxVal * 100);
+    return `<tr>
+      <td style="color:#e6edf3;font-weight:600;font-family:monospace;font-size:.82rem">
+        owo ${name.toLowerCase()}
+      </td>
+      <td><span class="badge ${meta.cls}">${meta.badge}</span></td>
+      <td style="color:#3fb950;font-weight:700">${fmt(stats[name])}</td>
+      <td style="color:#6e7681">${meta.cd}</td>
+      <td><div class="bar-bg"><div class="bar-fill" style="width:${pct}%"></div></div></td>
+    </tr>`;
+  }).join('');
+}
+
+refresh();
+setInterval(refresh, 3000);
 </script>
 </body>
 </html>
