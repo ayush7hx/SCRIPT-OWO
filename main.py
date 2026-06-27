@@ -12,14 +12,14 @@ app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "💰 OWO Auto-Farmer 24/7 Running!", 200
+    return "OWO Auto-Farmer 24/7 Running!", 200
 
 @app.route('/ping')
 def ping():
     return "PONG", 200
 
 def run_webserver():
-    app.run(host='0.0.0.0', port=8080)
+    app.run(host='0.0.0.0', port=5000)
 
 class AutoFarmer:
     def __init__(self):
@@ -45,32 +45,32 @@ class AutoFarmer:
         @self.client.event
         async def on_ready():
             print("=" * 70)
-            print("💰 OWO 24/7 AUTO-FARMER")
+            print("OWO 24/7 AUTO-FARMER")
             print("=" * 70)
-            print(f"✅ Logged in as: {self.client.user}")
+            print(f"Logged in as: {self.client.user}")
             
             channel = self.client.get_channel(CHANNEL_ID)
             if not channel:
-                print("❌ Channel not found!")
+                print("Channel not found!")
                 return
             
-            print(f"📢 Channel: #{channel.name}")
+            print(f"Channel: #{channel.name}")
             print("=" * 70)
-            print("🤖 FULLY AUTOMATIC - NO MANUAL WORK")
+            print("FULLY AUTOMATIC - NO MANUAL WORK")
             print("=" * 70)
-            print("📋 ACTIVE COMMANDS:")
-            print("   🔹 owo battle  → Har 1 min  ⭐")
-            print("   🔹 owo pray    → Har 5 min")
-            print("   🔹 owo work    → Har 15 min")
-            print("   🔹 owo hunt    → Har 30 min")
-            print("   🔹 owo fish    → Har 30 min")
-            print("   🔹 owo crime   → Har 30 min")
-            print("   🔹 owo rob     → Har 30 min")
-            print("   🔹 owo slots   → Har 10 min 🎰")
-            print("   🔹 owo daily   → Har 12 hours")
-            print("   🔹 owo weekly  → Har 7 days")
+            print("ACTIVE COMMANDS:")
+            print("   owo battle  -> Every 1 min")
+            print("   owo pray    -> Every 5 min")
+            print("   owo work    -> Every 15 min")
+            print("   owo hunt    -> Every 30 min")
+            print("   owo fish    -> Every 30 min")
+            print("   owo crime   -> Every 30 min")
+            print("   owo rob     -> Every 30 min")
+            print("   owo slots   -> Every 10 min")
+            print("   owo daily   -> Every 12 hours")
+            print("   owo weekly  -> Every 7 days")
             print("=" * 70)
-            print("🚀 FARMING STARTED...")
+            print("FARMING STARTED...")
             print("=" * 70)
             
             for cmd_info in self.commands:
@@ -96,11 +96,11 @@ class AutoFarmer:
                     self.command_stats[name] = 0
                 self.command_stats[name] += 1
                 
-                print(f"✅ {name} at {datetime.now().strftime('%H:%M:%S')}")
+                print(f"[OK] {name} at {datetime.now().strftime('%H:%M:%S')}")
                 await asyncio.sleep(2)
                 
             except Exception as e:
-                print(f"❌ {name} Error: {e}")
+                print(f"[ERROR] {name}: {e}")
             
             actual_delay = delay + random.randint(-30, 30)
             await asyncio.sleep(max(10, actual_delay))
@@ -117,14 +117,14 @@ class AutoFarmer:
             daily_earning = int(estimated / hours * 24) if hours > 0 else 0
             
             print("=" * 70)
-            print(f"📊 FARMING STATS at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+            print(f"FARMING STATS at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
             print("=" * 70)
-            print(f"⏰ Runtime: {int(hours)} hours")
-            print(f"🔄 Total Commands: {self.total_commands}")
-            print(f"💰 Estimated Earnings: ~{estimated:,} cowony")
-            print(f"📅 Per Day: ~{daily_earning:,} cowony")
+            print(f"Runtime: {int(hours)} hours")
+            print(f"Total Commands: {self.total_commands}")
+            print(f"Estimated Earnings: ~{estimated:,} cowony")
+            print(f"Per Day: ~{daily_earning:,} cowony")
             print("-" * 40)
-            print("📋 Command Breakdown:")
+            print("Command Breakdown:")
             
             for name, count in sorted(self.command_stats.items(), key=lambda x: x[1], reverse=True):
                 print(f"   {name}: {count} times")
@@ -136,24 +136,28 @@ class AutoFarmer:
         try:
             self.client.run(TOKEN, bot=False)
         except discord.LoginFailure:
-            print("❌ Invalid Token! Check DISCORD_TOKEN")
+            print("ERROR: Invalid Token! Check DISCORD_TOKEN env var.")
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"ERROR: {e}")
 
 if __name__ == "__main__":
     print("=" * 70)
-    print("💰 OWO AUTO-FARMER")
+    print("OWO AUTO-FARMER")
     print("=" * 70)
     
     if TOKEN == "YOUR_TOKEN_HERE":
-        print("❌ ERROR: Pehle TOKEN set karo!")
-        print("💡 Environment variable DISCORD_TOKEN set karo")
-        exit()
+        print("ERROR: Set DISCORD_TOKEN environment variable first!")
+        print("Web server will still start for uptime monitoring.")
     
     import threading
     web_thread = threading.Thread(target=run_webserver, daemon=True)
     web_thread.start()
-    print("🌐 Web server started on port 8080")
+    print("Web server started on port 5000")
     
-    farmer = AutoFarmer()
-    farmer.run()
+    if TOKEN != "YOUR_TOKEN_HERE":
+        farmer = AutoFarmer()
+        farmer.run()
+    else:
+        import time
+        while True:
+            time.sleep(60)
