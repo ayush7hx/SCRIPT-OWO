@@ -6,116 +6,118 @@
   <title>OWO Auto-Farmer</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background:#0d1117; color:#e6edf3; font-family:'Segoe UI',system-ui,sans-serif; min-height:100vh; padding:20px 14px 48px; }
+    body { background:#0d1117; color:#e6edf3; font-family:'Segoe UI',system-ui,sans-serif; min-height:100vh; padding:18px 14px 48px; }
 
-    header { text-align:center; margin-bottom:20px; }
-    header h1 { font-size:1.75rem; font-weight:800; background:linear-gradient(135deg,#58a6ff 30%,#3fb950); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-    header p  { color:#6e7681; margin-top:4px; font-size:.8rem; }
+    header { text-align:center; margin-bottom:18px; }
+    header h1 { font-size:1.7rem; font-weight:800; background:linear-gradient(135deg,#58a6ff 30%,#3fb950); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    header p  { color:#6e7681; margin-top:3px; font-size:.78rem; }
 
-    .status-row { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:9px; margin-bottom:18px; }
-    .pill { display:flex; align-items:center; gap:7px; background:#161b22; border:1px solid #21262d; border-radius:999px; padding:5px 13px; font-size:.79rem; font-weight:600; }
+    .status-row { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
+    .pill { display:flex; align-items:center; gap:7px; background:#161b22; border:1px solid #21262d; border-radius:999px; padding:5px 13px; font-size:.78rem; font-weight:600; }
     .dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
     .dot-online  { background:#3fb950; box-shadow:0 0 6px #3fb950; animation:blink 2s infinite; }
     .dot-pending { background:#f0883e; box-shadow:0 0 6px #f0883e; animation:blink 1.2s infinite; }
     .dot-error   { background:#f85149; }
     .dot-off     { background:#484f58; }
-    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+    @keyframes blink { 0%,100%{opacity:1}50%{opacity:.25} }
 
     /* Channel modal */
     .modal-bg { position:fixed; inset:0; background:#000000bb; display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
     .modal { background:#161b22; border:1px solid #30363d; border-radius:16px; padding:28px 26px; width:100%; max-width:400px; }
-    .modal h2 { font-size:1.05rem; margin-bottom:8px; }
-    .modal p  { color:#8b949e; font-size:.8rem; line-height:1.6; margin-bottom:16px; }
-    .modal input { width:100%; background:#0d1117; border:1px solid #30363d; border-radius:8px; padding:10px 13px; color:#e6edf3; font-size:.9rem; outline:none; }
+    .modal h2 { font-size:1rem; margin-bottom:8px; }
+    .modal p  { color:#8b949e; font-size:.78rem; line-height:1.6; margin-bottom:16px; }
+    .modal input { width:100%; background:#0d1117; border:1px solid #30363d; border-radius:8px; padding:10px 12px; color:#e6edf3; font-size:.9rem; outline:none; }
     .modal input:focus { border-color:#58a6ff; }
-    .modal-btn { width:100%; margin-top:12px; padding:11px; background:#238636; border:none; border-radius:8px; color:#fff; font-size:.9rem; font-weight:700; cursor:pointer; }
+    .modal-btn { width:100%; margin-top:11px; padding:11px; background:#238636; border:none; border-radius:8px; color:#fff; font-size:.9rem; font-weight:700; cursor:pointer; }
     .modal-btn:hover { background:#2ea043; }
-    .modal-err { color:#f85149; font-size:.78rem; margin-top:7px; display:none; }
+    .modal-err { color:#f85149; font-size:.77rem; margin-top:6px; display:none; }
 
-    /* Notices */
-    .notice { max-width:860px; margin:0 auto 14px; border-radius:10px; padding:12px 16px; border:1px solid; display:none; }
-    .notice-err  { background:#1a0d0d; border-color:#f85149; border-left:4px solid #f85149; }
-    .notice-warn { background:#1c1500; border-color:#e3b341; border-left:4px solid #e3b341; }
-    .notice h3 { font-size:.86rem; margin-bottom:3px; }
-    .notice-err  h3 { color:#f85149; }
-    .notice-warn h3 { color:#e3b341; }
-    .notice p { color:#9ca3af; font-size:.8rem; line-height:1.6; }
+    /* Layout helpers */
+    .wrap  { max-width:880px; margin:0 auto 12px; }
+    .grid  { display:grid; gap:11px; max-width:880px; margin:0 auto 12px; }
+    .g2    { grid-template-columns:1fr 1fr; }
+    .g3    { grid-template-columns:repeat(3,1fr); }
+    .g4    { grid-template-columns:repeat(4,1fr); }
+    @media(max-width:640px) { .g4{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr} }
 
-    /* Layout */
-    .wrap { max-width:860px; margin:0 auto 13px; }
-    .card { background:#161b22; border:1px solid #21262d; border-radius:12px; padding:17px 19px; }
-    .card-label { font-size:.67rem; text-transform:uppercase; letter-spacing:1.1px; color:#6e7681; margin-bottom:5px; }
-    .card-value { font-size:1.6rem; font-weight:800; font-variant-numeric:tabular-nums; }
-    .card-sub   { font-size:.71rem; color:#6e7681; margin-top:2px; }
-    .blue{color:#58a6ff} .green{color:#3fb950} .gold{color:#e3b341} .purple{color:#bc8cff}
+    /* Cards */
+    .card { background:#161b22; border:1px solid #21262d; border-radius:12px; padding:16px 18px; }
+    .label { font-size:.65rem; text-transform:uppercase; letter-spacing:1.1px; color:#6e7681; margin-bottom:4px; }
+    .val   { font-size:1.55rem; font-weight:800; font-variant-numeric:tabular-nums; }
+    .sub   { font-size:.7rem; color:#6e7681; margin-top:2px; }
+    .blue  { color:#58a6ff } .green { color:#3fb950 } .gold { color:#e3b341 }
+    .purple{ color:#bc8cff } .red   { color:#f85149 } .orange{ color:#f0883e }
 
     /* Target bar */
-    .target-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:9px; }
-    .target-title  { font-size:.84rem; font-weight:600; }
-    .target-pct    { font-size:1.4rem; font-weight:800; color:#e3b341; }
-    .prog-bg  { background:#21262d; border-radius:999px; height:10px; overflow:hidden; margin-bottom:6px; }
-    .prog-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,#3fb950,#58a6ff); transition:width .9s ease; }
-    .target-sub { display:flex; justify-content:space-between; font-size:.72rem; color:#6e7681; }
+    .target-hdr { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
+    .prog-bg    { background:#21262d; border-radius:999px; height:10px; overflow:hidden; margin-bottom:5px; }
+    .prog-fill  { height:100%; border-radius:999px; background:linear-gradient(90deg,#3fb950,#58a6ff); transition:width 1s ease; }
+    .target-sub { display:flex; justify-content:space-between; font-size:.71rem; color:#6e7681; }
 
-    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:11px; max-width:860px; margin:0 auto 13px; }
+    /* Team panel */
+    .team-panel { display:flex; flex-wrap:wrap; gap:8px; align-items:flex-start; }
+    .animal-card { background:#0d1117; border:1px solid #21262d; border-radius:9px; padding:8px 12px; min-width:80px; text-align:center; }
+    .animal-emoji { font-size:1.3rem; }
+    .animal-level { font-size:.75rem; font-weight:700; color:#bc8cff; margin-top:2px; }
+    .animal-name  { font-size:.66rem; color:#6e7681; }
+    .no-team { color:#484f58; font-size:.8rem; padding:8px 0; }
 
-    /* Smart features row */
-    .smart-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:11px; max-width:860px; margin:0 auto 13px; }
-    .smart-card { background:#161b22; border:1px solid #21262d; border-radius:12px; padding:13px 15px; }
-    .smart-label { font-size:.67rem; text-transform:uppercase; letter-spacing:1px; color:#6e7681; margin-bottom:4px; }
-    .smart-val   { font-size:1.3rem; font-weight:800; color:#58a6ff; }
-    .smart-sub   { font-size:.69rem; color:#6e7681; margin-top:2px; }
+    /* Battle streak badge */
+    .streak-badge { display:inline-flex; align-items:center; gap:5px; background:#1a1200; border:1px solid #e3b34166; color:#e3b341; border-radius:8px; padding:6px 12px; font-size:.9rem; font-weight:800; }
+    .streak-fire { font-size:1.1rem; }
 
     /* Info bar */
-    .info-card { background:#161b22; border:1px solid #21262d; border-radius:12px; padding:12px 17px; display:flex; flex-wrap:wrap; gap:13px; align-items:flex-start; }
-    .info-item  { font-size:.78rem; }
-    .info-label { color:#6e7681; margin-right:4px; }
-    .info-val   { color:#e6edf3; font-weight:600; }
-    .ad-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; width:100%; }
-    .ad-badge { font-size:.68rem; font-weight:600; padding:2px 8px; border-radius:999px; background:#0f2d1a; color:#3fb950; border:1px solid #3fb95044; }
-    .team-badge { background:#1a0e2d; color:#bc8cff; border-color:#bc8cff44; }
-    .logout-btn { background:none; border:1px solid #f8514966; color:#f85149; border-radius:6px; padding:4px 10px; font-size:.73rem; cursor:pointer; margin-left:auto; }
+    .info-card { background:#161b22; border:1px solid #21262d; border-radius:12px; padding:11px 16px; display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start; }
+    .info-item { font-size:.77rem; }
+    .info-lbl  { color:#6e7681; margin-right:4px; }
+    .info-val  { color:#e6edf3; font-weight:600; }
+    .ad-row    { display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; width:100%; }
+    .badge     { font-size:.67rem; font-weight:600; padding:2px 8px; border-radius:999px; }
+    .bg-green  { background:#0f2d1a; color:#3fb950; border:1px solid #3fb95044; }
+    .bg-purple { background:#1a0e2d; color:#bc8cff; border:1px solid #bc8cff44; }
+    .logout-btn { background:none; border:1px solid #f8514966; color:#f85149; border-radius:6px; padding:4px 10px; font-size:.72rem; cursor:pointer; margin-left:auto; }
     .logout-btn:hover { background:#2d1218; }
 
-    /* Two-panel layout */
-    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:13px; max-width:860px; margin:0 auto 13px; }
-    @media(max-width:600px) { .two-col { grid-template-columns:1fr; } }
+    /* Notice */
+    .pause-banner { max-width:880px; margin:0 auto 12px; background:#1a1200; border:1px solid #e3b341; border-left:4px solid #e3b341; border-radius:10px; padding:10px 15px; display:none; }
+    .pause-banner h3 { color:#e3b341; font-size:.84rem; }
+    .pause-banner p  { color:#9ca3af; font-size:.77rem; margin-top:3px; }
+    .error-banner { max-width:880px; margin:0 auto 12px; background:#1a0d0d; border:1px solid #f85149; border-left:4px solid #f85149; border-radius:10px; padding:10px 15px; display:none; }
+    .error-banner h3 { color:#f85149; font-size:.84rem; }
+    .error-banner p  { color:#9ca3af; font-size:.77rem; margin-top:3px; }
 
-    /* Activity log */
-    .log-item { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #21262d; font-size:.79rem; }
+    /* Logs */
+    .section-title { font-size:.67rem; text-transform:uppercase; letter-spacing:1.2px; color:#6e7681; margin-bottom:7px; }
+    .log-scroll    { max-height:260px; overflow-y:auto; }
+    .log-item      { display:flex; align-items:flex-start; gap:8px; padding:6px 0; border-bottom:1px solid #1c2128; font-size:.78rem; }
     .log-item:last-child { border-bottom:none; }
-    .log-time { color:#484f58; font-size:.7rem; flex-shrink:0; font-family:monospace; }
-    .log-earn { color:#3fb950; font-weight:600; }
-    .log-loss { color:#f85149; }
-    .log-warn { color:#f0883e; }
-    .log-info { color:#8b949e; }
+    .log-time  { color:#484f58; font-size:.68rem; flex-shrink:0; font-family:monospace; padding-top:1px; }
+    .log-earn  { color:#3fb950; font-weight:600; }
+    .log-loss  { color:#f85149; }
+    .log-warn  { color:#f0883e; }
+    .log-info  { color:#8b949e; }
 
     /* Command table */
-    .section { max-width:860px; margin:0 auto 13px; }
-    .section-title { font-size:.69rem; text-transform:uppercase; letter-spacing:1.2px; color:#6e7681; margin-bottom:8px; }
     table { width:100%; border-collapse:collapse; }
-    th,td { padding:8px 12px; text-align:left; border-bottom:1px solid #21262d; font-size:.79rem; }
-    th { color:#6e7681; font-weight:600; font-size:.67rem; text-transform:uppercase; letter-spacing:.9px; }
+    th,td { padding:8px 12px; text-align:left; border-bottom:1px solid #1c2128; font-size:.78rem; }
+    th    { color:#6e7681; font-weight:600; font-size:.66rem; text-transform:uppercase; letter-spacing:.9px; }
     tr:last-child td { border-bottom:none; }
     tr:hover td { background:#1c2128; }
-    .bar-bg   { background:#21262d; border-radius:4px; height:5px; min-width:50px; }
-    .bar-fill { height:100%; background:#58a6ff; border-radius:4px; transition:width .6s; }
-    .badge { display:inline-block; padding:2px 6px; border-radius:99px; font-size:.64rem; font-weight:700; }
-    .b-grind  { background:#0f2d1a; color:#3fb950; border:1px solid #3fb95033; }
-    .b-gamble { background:#1a0e2d; color:#bc8cff; border:1px solid #bc8cff33; }
-    .b-bonus  { background:#2d1a0e; color:#e3b341; border:1px solid #e3b34133; }
-    .b-sell   { background:#0e1f2d; color:#58a6ff; border:1px solid #58a6ff33; }
+    .bar-bg  { background:#21262d; border-radius:4px; height:5px; min-width:40px; }
+    .bar-fill{ height:100%; border-radius:4px; transition:width .7s; }
+    .b-hunt  { background:#3fb950; }
+    .b-battle{ background:#bc8cff; }
+    .b-fish  { background:#58a6ff; }
+    .b-gamble{ background:#f0883e; }
+    .b-bonus { background:#e3b341; }
+    .b-sell  { background:#484f58; }
+    .type-badge { display:inline-block; padding:2px 7px; border-radius:999px; font-size:.63rem; font-weight:700; }
+    .tb-grind  { background:#0f2d1a; color:#3fb950; border:1px solid #3fb95033; }
+    .tb-gamble { background:#1a0e2d; color:#bc8cff; border:1px solid #bc8cff33; }
+    .tb-bonus  { background:#2d1a0e; color:#e3b341; border:1px solid #e3b34133; }
+    .tb-sell   { background:#1c1c1c; color:#6e7681; border:1px solid #30363d; }
 
-    /* Pause banner */
-    .pause-banner { max-width:860px; margin:0 auto 13px; background:#1a1200; border:1px solid #e3b341; border-left:4px solid #e3b341; border-radius:10px; padding:10px 15px; display:none; }
-    .pause-banner h3 { color:#e3b341; font-size:.85rem; }
-    .pause-banner p  { color:#9ca3af; font-size:.78rem; margin-top:3px; }
-
-    /* Real cowony events */
-    .event-earn { color:#3fb950; font-weight:700; }
-    .event-loss { color:#f85149; font-weight:700; }
-
-    footer { text-align:center; color:#373e47; font-size:.69rem; margin-top:24px; }
+    footer { text-align:center; color:#373e47; font-size:.68rem; margin-top:22px; }
   </style>
 </head>
 <body>
@@ -124,10 +126,11 @@
 <div class="modal-bg" id="ch-modal" style="display:none">
   <div class="modal">
     <h2>Enter Channel ID</h2>
-    <p>Right-click the OWO farming channel in Discord → <strong>Copy Channel ID</strong><br><small style="color:#484f58">(Enable Developer Mode in Discord Settings → Advanced first)</small></p>
+    <p>Right-click the OWO farming channel in Discord → <strong>Copy Channel ID</strong><br>
+    <small style="color:#484f58">(Enable Developer Mode: Discord Settings → Advanced)</small></p>
     <input type="text" id="ch-input" placeholder="e.g. 1234567890123456789"
            oninput="this.value=this.value.replace(/\D/g,'')"
-           onkeydown="if(event.key==='Enter') saveChannel()" />
+           onkeydown="if(event.key==='Enter')saveChannel()" />
     <div class="modal-err" id="ch-err"></div>
     <button class="modal-btn" onclick="saveChannel()">Start Farming</button>
   </div>
@@ -135,297 +138,337 @@
 
 <header>
   <h1>OWO Auto-Farmer</h1>
-  <p>24/7 Smart Farming · Real Data · Auto Team · Auto Lootbox</p>
+  <p>24/7 Hunt + Battle XP Grind · Real Cowony · Auto Team · Anti-Detect</p>
 </header>
 
 <div class="status-row">
   <div class="pill"><div class="dot" id="dot"></div><span id="status-text">Loading…</span></div>
-  <div class="pill" id="team-pill"><div class="dot dot-off" id="team-dot"></div><span id="team-label">Team: checking…</span></div>
-  <div class="pill"><div class="dot dot-online"></div><span>Anti-Detect ON</span></div>
+  <div class="pill"><div class="dot" id="team-dot"></div><span id="team-label">Team: —</span></div>
+  <div class="pill blue"><span id="streak-pill">🔥 Streak: 0</span></div>
+  <div class="pill"><div class="dot dot-online"></div>Anti-Detect ON</div>
 </div>
 
-<!-- Notices -->
-<div id="notice-err" class="notice notice-err"><h3>Error</h3><p id="err-msg"></p></div>
-<div id="pause-banner" class="pause-banner">
+<!-- Banners -->
+<div class="pause-banner" id="pause-banner">
   <h3>⏸ Human Break Active</h3>
-  <p id="pause-reason">Anti-detect break running…</p>
+  <p id="pause-reason">Break running…</p>
+</div>
+<div class="error-banner" id="error-banner">
+  <h3>⚠ Error</h3>
+  <p id="error-msg"></p>
 </div>
 
 <!-- Daily target -->
 <div class="wrap">
   <div class="card">
-    <div class="target-header">
-      <span class="target-title">Daily Target
-        <span style="color:#6e7681;font-size:.7rem;font-weight:400"> — Real tracked cowony (goal: 85,000/day)</span>
+    <div class="target-hdr">
+      <span style="font-size:.84rem;font-weight:600">Daily Target
+        <span style="color:#6e7681;font-size:.69rem;font-weight:400"> — Real tracked cowony</span>
       </span>
-      <span class="target-pct" id="target-pct">0%</span>
+      <span style="font-size:1.4rem;font-weight:800;color:#e3b341" id="target-pct">0%</span>
     </div>
     <div class="prog-bg"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
     <div class="target-sub">
-      <span id="earned-label">0 cowony (real)</span>
-      <span id="rate-label">Rate: 0 / day</span>
+      <span id="earned-label">0 cowony</span>
+      <span id="rate-label">0 / day · Target: 85,000</span>
     </div>
   </div>
 </div>
 
-<!-- Stat cards -->
-<div class="grid">
+<!-- Main stats -->
+<div class="grid g4">
+  <div class="card"><div class="label">Real Cowony</div><div class="val green" id="real-cowony">0</div><div class="sub">from OWO responses</div></div>
+  <div class="card"><div class="label">Daily Rate</div><div class="val gold" id="daily-rate">0</div><div class="sub">cowony / day</div></div>
+  <div class="card"><div class="label">Total XP</div><div class="val purple" id="total-xp">0</div><div class="sub">hunt + battle XP</div></div>
+  <div class="card"><div class="label">Uptime</div><div class="val blue" id="uptime">—</div><div class="sub">hh:mm:ss</div></div>
+</div>
+
+<!-- Battle + hunt stats row -->
+<div class="grid g4">
   <div class="card">
-    <div class="card-label">Real Cowony</div>
-    <div class="card-value green" id="real-cowony">0</div>
-    <div class="card-sub">tracked from OWO</div>
+    <div class="label">Battle Streak</div>
+    <div style="margin-top:4px">
+      <span class="streak-badge"><span class="streak-fire">🔥</span><span id="streak-val">0</span></span>
+    </div>
+    <div class="sub" style="margin-top:5px">win streak</div>
   </div>
+  <div class="card"><div class="label">Battles Won</div><div class="val purple" id="battles-won">0</div><div class="sub">this session</div></div>
+  <div class="card"><div class="label">Animals Caught</div><div class="val green" id="animals-caught">0</div><div class="sub">hunt + fish</div></div>
+  <div class="card"><div class="label">Lootboxes</div><div class="val gold" id="lootboxes">0</div><div class="sub">auto-opened</div></div>
+</div>
+
+<!-- Team panel -->
+<div class="wrap">
   <div class="card">
-    <div class="card-label">Daily Rate</div>
-    <div class="card-value gold" id="daily">0</div>
-    <div class="card-sub">cowony / day</div>
-  </div>
-  <div class="card">
-    <div class="card-label">Commands Sent</div>
-    <div class="card-value blue" id="total">0</div>
-    <div class="card-sub">total this session</div>
-  </div>
-  <div class="card">
-    <div class="card-label">Uptime</div>
-    <div class="card-value purple" id="uptime">—</div>
-    <div class="card-sub">hh : mm : ss</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div>
+        <div class="label">Battle Team</div>
+        <div style="font-size:.82rem;color:#6e7681;margin-top:1px">Like Diva's L.30 mythic team — auto-created from your animals</div>
+      </div>
+      <div id="team-status-badge" style="font-size:.75rem;font-weight:700;padding:4px 11px;border-radius:999px;background:#1a0e2d;color:#bc8cff;border:1px solid #bc8cff44">⟳ Setting up…</div>
+    </div>
+    <div class="team-panel" id="team-panel">
+      <div class="no-team">Checking team status… (bot will auto-create if needed)</div>
+    </div>
   </div>
 </div>
 
-<!-- Smart features -->
-<div class="smart-grid">
-  <div class="smart-card">
-    <div class="smart-label">Lootboxes</div>
-    <div class="smart-val" id="lootboxes">0</div>
-    <div class="smart-sub">auto-opened</div>
-  </div>
-  <div class="smart-card">
-    <div class="smart-label">Animals</div>
-    <div class="smart-val" id="animals">0</div>
-    <div class="smart-sub">caught this session</div>
-  </div>
-  <div class="smart-card">
-    <div class="smart-label">Quests</div>
-    <div class="smart-val" id="quests">0</div>
-    <div class="smart-sub">completed</div>
-  </div>
-  <div class="smart-card">
-    <div class="smart-label">Session Start</div>
-    <div class="smart-val" style="font-size:.9rem;color:#8b949e" id="started">—</div>
-    <div class="smart-sub">started at</div>
-  </div>
-</div>
-
-<!-- Info + anti-detect -->
+<!-- Info bar -->
 <div class="wrap">
   <div class="info-card">
-    <div class="info-item"><span class="info-label">Account:</span><span class="info-val" id="account">—</span></div>
-    <div class="info-item"><span class="info-label">Channel:</span><span class="info-val" id="channel">—</span></div>
-    <div class="info-item"><span class="info-label">Last sent:</span><span class="info-val" id="last-cmd">—</span></div>
+    <div class="info-item"><span class="info-lbl">Account:</span><span class="info-val" id="account">—</span></div>
+    <div class="info-item"><span class="info-lbl">Channel:</span><span class="info-val" id="channel">—</span></div>
+    <div class="info-item"><span class="info-lbl">Commands:</span><span class="info-val" id="total-cmds">0</span></div>
+    <div class="info-item"><span class="info-lbl">Last sent:</span><span class="info-val" id="last-cmd">—</span></div>
     <button class="logout-btn" onclick="doLogout()">Logout</button>
     <div class="ad-row">
-      <span class="ad-badge">✓ Typing Simulation</span>
-      <span class="ad-badge">✓ ±20% Jitter</span>
-      <span class="ad-badge">✓ Human Breaks</span>
-      <span class="ad-badge">✓ 4% Skip Rate</span>
-      <span class="ad-badge">✓ Rate-Limit Safe</span>
-      <span class="ad-badge team-badge" id="team-feat">⟳ Auto Team Setup</span>
-      <span class="ad-badge team-badge">✓ Auto Lootbox Open</span>
-      <span class="ad-badge team-badge">✓ Auto Crate Open</span>
+      <span class="badge bg-green">✓ Typing Sim</span>
+      <span class="badge bg-green">✓ ±20% Jitter</span>
+      <span class="badge bg-green">✓ Human Breaks</span>
+      <span class="badge bg-green">✓ 4% Skip Rate</span>
+      <span class="badge bg-green">✓ Rate-Limit Safe</span>
+      <span class="badge bg-purple" id="team-feat-badge">⟳ Auto Team Create</span>
+      <span class="badge bg-purple">✓ Auto Lootbox Open</span>
+      <span class="badge bg-purple">✓ Auto Crate Open</span>
+      <span class="badge bg-purple">✓ XP Tracking</span>
     </div>
   </div>
 </div>
 
-<!-- Two column: activity log + recent cowony events -->
-<div class="two-col">
+<!-- Activity + Cowony Events -->
+<div class="grid g2">
   <div>
-    <div class="section-title" style="margin-bottom:8px">Live Activity Log</div>
-    <div class="card" style="padding:0 16px; max-height:280px; overflow-y:auto">
-      <div id="activity-log"><div style="color:#484f58;text-align:center;padding:20px;font-size:.8rem">Waiting for bot…</div></div>
+    <div class="section-title">Live Activity Log</div>
+    <div class="card" style="padding:0 16px">
+      <div class="log-scroll" id="activity-log">
+        <div style="color:#484f58;text-align:center;padding:22px;font-size:.8rem">Waiting for bot…</div>
+      </div>
     </div>
   </div>
   <div>
-    <div class="section-title" style="margin-bottom:8px">Real Cowony Events</div>
-    <div class="card" style="padding:0 16px; max-height:280px; overflow-y:auto">
-      <div id="cowony-events"><div style="color:#484f58;text-align:center;padding:20px;font-size:.8rem">No events yet…</div></div>
+    <div class="section-title">Real Cowony Events</div>
+    <div class="card" style="padding:0 16px">
+      <div class="log-scroll" id="cowony-events">
+        <div style="color:#484f58;text-align:center;padding:22px;font-size:.8rem">No events yet…</div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Command breakdown -->
-<div class="section">
-  <div class="section-title">Live Command Breakdown</div>
+<!-- Command table -->
+<div class="wrap">
+  <div class="section-title">Command Breakdown</div>
   <div class="card" style="padding:0;overflow:hidden">
     <table>
-      <thead><tr><th>Command</th><th>Type</th><th>Sent</th><th>Cooldown</th><th style="width:110px">Activity</th></tr></thead>
-      <tbody id="cmd-body"><tr><td colspan="5" style="color:#484f58;text-align:center;padding:20px">Waiting for bot…</td></tr></tbody>
+      <thead><tr><th>Command</th><th>Type</th><th>Sent</th><th>Cooldown</th><th style="width:100px">Activity</th></tr></thead>
+      <tbody id="cmd-body">
+        <tr><td colspan="5" style="color:#484f58;text-align:center;padding:22px">Waiting for bot…</td></tr>
+      </tbody>
     </table>
   </div>
 </div>
 
-<footer>Auto-refreshes every 3s · Real data from OWO responses · Anti-Detection Active</footer>
+<footer>Auto-refresh every 3s · Real data from OWO responses · Anti-Detection Active</footer>
 
 <script>
 const CMD_META = {
-  Battle:{cls:'b-grind',cd:'1 min'}, Pray:{cls:'b-grind',cd:'5 min'},
-  Curse:{cls:'b-grind',cd:'5 min'}, Work:{cls:'b-grind',cd:'15 min'},
-  Crime:{cls:'b-grind',cd:'30 min'}, Hunt:{cls:'b-grind',cd:'30 min'},
-  Fish:{cls:'b-grind',cd:'30 min'}, Slots:{cls:'b-gamble',cd:'10 min'},
-  Coinflip:{cls:'b-gamble',cd:'5 min'}, Sell:{cls:'b-sell',cd:'2 hrs'},
-  Checklist:{cls:'b-bonus',cd:'1 hr'}, Daily:{cls:'b-bonus',cd:'12 hrs'},
-  Weekly:{cls:'b-bonus',cd:'7 days'},
+  Hunt:     {tb:'tb-grind',  bar:'b-hunt',   cd:'~1 min'},
+  Battle:   {tb:'tb-grind',  bar:'b-battle', cd:'~1 min'},
+  Fish:     {tb:'tb-grind',  bar:'b-fish',   cd:'~1 min'},
+  Pray:     {tb:'tb-grind',  bar:'b-hunt',   cd:'5 min'},
+  Curse:    {tb:'tb-grind',  bar:'b-hunt',   cd:'5 min'},
+  Work:     {tb:'tb-grind',  bar:'b-hunt',   cd:'15 min'},
+  Crime:    {tb:'tb-grind',  bar:'b-hunt',   cd:'30 min'},
+  Slots:    {tb:'tb-gamble', bar:'b-gamble', cd:'10 min'},
+  Coinflip: {tb:'tb-gamble', bar:'b-gamble', cd:'5 min'},
+  Sell:     {tb:'tb-sell',   bar:'b-sell',   cd:'2 hrs'},
+  Checklist:{tb:'tb-bonus',  bar:'b-bonus',  cd:'1 hr'},
+  Daily:    {tb:'tb-bonus',  bar:'b-bonus',  cd:'12 hrs'},
+  Weekly:   {tb:'tb-bonus',  bar:'b-bonus',  cd:'7 days'},
 };
-const CAT = {'b-grind':'GRIND','b-gamble':'GAMBLE','b-bonus':'BONUS','b-sell':'SELL'};
+const CAT = {'tb-grind':'GRIND','tb-gamble':'GAMBLE','tb-bonus':'BONUS','tb-sell':'SELL'};
 const STATUS = {
-  online:       {cls:'dot-online', lbl:'Online — Farming Active'},
-  connecting:   {cls:'dot-pending',lbl:'Connecting…'},
-  reconnecting: {cls:'dot-pending',lbl:'Reconnecting…'},
-  waiting:      {cls:'dot-pending',lbl:'Waiting for login…'},
-  no_channel:   {cls:'dot-pending',lbl:'Channel ID needed'},
-  error:        {cls:'dot-error',  lbl:'Error'},
+  online:       {cls:'dot-online',  lbl:'Online — Farming Active'},
+  connecting:   {cls:'dot-pending', lbl:'Connecting…'},
+  reconnecting: {cls:'dot-pending', lbl:'Reconnecting…'},
+  waiting:      {cls:'dot-pending', lbl:'Waiting for login…'},
+  no_channel:   {cls:'dot-pending', lbl:'Channel ID needed'},
+  error:        {cls:'dot-error',   lbl:'Error'},
 };
 const fmt  = n => Number(n||0).toLocaleString();
 const fmtT = s => {
   if(!s) return '—';
-  const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;
+  const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+};
+
+const EMOJI_MAP = {
+  gfox:'🦊',gshrimp:'🦐',gdeer:'🦌',fcat:'🐱',fdog:'🐶',fbear:'🐻',fwolf:'🐺',
+  lion:'🦁',tiger:'🐯',panda:'🐼',otter:'🦦',penguin:'🐧',parrot:'🦜',
+  chipmunk:'🐿️',rabbit:'🐰',mouse:'🐭',bee:'🐝',butterfly:'🦋',rooster:'🐓',
+  sheep:'🐑',fox:'🦊',cat:'🐱',dog:'🐶',bear:'🐻',wolf:'🐺',deer:'🦌',
+  duck:'🦆',hamster:'🐹',pig:'🐷',horse:'🐴',cow:'🐄',
 };
 
 let chModalShown = false;
 
 async function refresh() {
-  let d; try { d=await(await fetch('/api/stats')).json(); } catch{return;}
+  let d; try { d = await (await fetch('/api/stats')).json(); } catch { return; }
 
   // Status
-  const {cls,lbl} = STATUS[d.status]||{cls:'dot-off',lbl:d.status};
-  document.getElementById('dot').className='dot '+cls;
-  document.getElementById('status-text').textContent=lbl;
+  const {cls, lbl} = STATUS[d.status] || {cls:'dot-off', lbl:d.status};
+  document.getElementById('dot').className = 'dot ' + cls;
+  document.getElementById('status-text').textContent = lbl;
 
   // Team status
-  const tdot = document.getElementById('team-dot');
-  const tlbl = document.getElementById('team-label');
-  const tfeat = document.getElementById('team-feat');
-  if(d.team_ready) {
-    tdot.className='dot dot-online';
-    tlbl.textContent='Team: Ready';
-    tfeat.textContent='✓ Battle Team Active';
+  const tdot  = document.getElementById('team-dot');
+  const tlbl  = document.getElementById('team-label');
+  const tbadge = document.getElementById('team-status-badge');
+  const tfeat = document.getElementById('team-feat-badge');
+  if (d.team_ready) {
+    tdot.className = 'dot dot-online';
+    tlbl.textContent = 'Team: Ready ✓';
+    tbadge.textContent = '✓ Team Active';
+    tbadge.style.background = '#0f2d1a'; tbadge.style.color = '#3fb950';
+    tbadge.style.borderColor = '#3fb95044';
+    tfeat.textContent = '✓ Auto Team Created';
   } else {
-    tdot.className='dot dot-pending';
-    tlbl.textContent='Team: Setting up…';
-    tfeat.textContent='⟳ Auto Team Setup';
+    tdot.className = 'dot dot-pending';
+    tlbl.textContent = 'Team: Setting up…';
+    tbadge.textContent = '⟳ Setting up…';
+    tbadge.style.background = '#1a0e2d'; tbadge.style.color = '#bc8cff';
+    tbadge.style.borderColor = '#bc8cff44';
+    tfeat.textContent = '⟳ Auto Team Create';
   }
+
+  // Streak pill
+  const streak = d.battle_streak || 0;
+  document.getElementById('streak-pill').textContent = `🔥 Streak: ${streak}`;
+  document.getElementById('streak-val').textContent = streak;
 
   // Channel modal
-  if(!d.channel_id_set && !chModalShown && d.status!=='waiting') {
-    chModalShown=true;
-    document.getElementById('ch-modal').style.display='flex';
-    setTimeout(()=>document.getElementById('ch-input').focus(),100);
+  if (!d.channel_id_set && !chModalShown && d.status !== 'waiting') {
+    chModalShown = true;
+    document.getElementById('ch-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('ch-input').focus(), 100);
   }
 
-  // Error
-  const errEl=document.getElementById('notice-err');
-  errEl.style.display=(d.status==='error'&&d.last_error)?'block':'none';
-  if(d.last_error) document.getElementById('err-msg').textContent=d.last_error;
+  // Banners
+  const eb = document.getElementById('error-banner');
+  eb.style.display = (d.status === 'error' && d.last_error) ? 'block' : 'none';
+  if (d.last_error) document.getElementById('error-msg').textContent = d.last_error;
 
-  // Pause
-  const pb=document.getElementById('pause-banner');
-  pb.style.display=d.paused?'block':'none';
-  if(d.paused) document.getElementById('pause-reason').textContent=d.pause_reason||'Break…';
+  const pb = document.getElementById('pause-banner');
+  pb.style.display = d.paused ? 'block' : 'none';
+  if (d.paused) document.getElementById('pause-reason').textContent = d.pause_reason || 'Break…';
 
-  // Target bar (real cowony)
-  const target=d.daily_target||85000;
-  const real=d.real_cowony||0;
-  const daily=d.daily_rate||0;
-  const pct=Math.min(Math.round(real/target*100),100);
-  document.getElementById('target-pct').textContent=pct+'%';
-  document.getElementById('prog-fill').style.width=pct+'%';
-  document.getElementById('earned-label').textContent=fmt(real)+' cowony (real)';
-  document.getElementById('rate-label').textContent='Rate: '+fmt(daily)+' / day';
+  // Target
+  const target = d.daily_target || 85000;
+  const real   = d.real_cowony || 0;
+  const rate   = d.daily_rate  || 0;
+  const pct    = Math.min(Math.round(real / target * 100), 100);
+  document.getElementById('target-pct').textContent = pct + '%';
+  document.getElementById('prog-fill').style.width  = pct + '%';
+  document.getElementById('earned-label').textContent = fmt(real) + ' cowony (real)';
+  document.getElementById('rate-label').textContent   = fmt(rate) + ' / day · Target: 85,000';
 
-  // Stat cards
-  document.getElementById('real-cowony').textContent=fmt(real);
-  document.getElementById('daily').textContent=fmt(daily);
-  document.getElementById('total').textContent=fmt(d.total_commands);
-  document.getElementById('uptime').textContent=fmtT(d.uptime_seconds);
-
-  // Smart stats
-  document.getElementById('lootboxes').textContent=fmt(d.lootboxes_opened);
-  document.getElementById('animals').textContent=fmt(d.animals_caught);
-  document.getElementById('quests').textContent=fmt(d.quests_completed);
-  document.getElementById('started').textContent=d.start_time||(d.start_time&&d.start_time.slice(11,16))||'—';
+  // Stats
+  document.getElementById('real-cowony').textContent  = fmt(real);
+  document.getElementById('daily-rate').textContent   = fmt(rate);
+  document.getElementById('total-xp').textContent     = fmt(d.total_xp);
+  document.getElementById('uptime').textContent       = fmtT(d.uptime_seconds);
+  document.getElementById('battles-won').textContent  = fmt(d.battles_won);
+  document.getElementById('animals-caught').textContent = fmt(d.animals_caught);
+  document.getElementById('lootboxes').textContent    = fmt(d.lootboxes_opened);
 
   // Info bar
-  document.getElementById('account').textContent=d.logged_in_as||'—';
-  document.getElementById('channel').textContent=d.channel_name?'#'+d.channel_name:(d.channel_id||'—');
-  document.getElementById('last-cmd').textContent=d.last_command_time||'—';
+  document.getElementById('account').textContent   = d.logged_in_as || '—';
+  document.getElementById('channel').textContent   = d.channel_name ? '#' + d.channel_name : (d.channel_id || '—');
+  document.getElementById('total-cmds').textContent = fmt(d.total_commands);
+  document.getElementById('last-cmd').textContent  = d.last_command_time || '—';
 
-  // Activity log
-  const acts = d.activity_log||[];
-  const alog = document.getElementById('activity-log');
-  if(!acts.length) {
-    alog.innerHTML='<div style="color:#484f58;text-align:center;padding:20px;font-size:.8rem">Waiting for first action…</div>';
+  // Team panel
+  const animals = d.team_animals || [];
+  const panel   = document.getElementById('team-panel');
+  if (!animals.length) {
+    panel.innerHTML = `<div class="no-team">${d.team_ready ? 'Team active (battle response will show animals)' : 'Bot is auto-creating your battle team…'}</div>`;
   } else {
-    alog.innerHTML = acts.map(a=>`
-      <div class="log-item">
-        <span class="log-time">${a.time}</span>
-        <span class="log-${a.kind||'info'}">${a.msg}</span>
-      </div>`).join('');
+    panel.innerHTML = animals.map(a => {
+      const em = EMOJI_MAP[a.emoji] || '🐾';
+      return `<div class="animal-card">
+        <div class="animal-emoji">${em}</div>
+        <div class="animal-level">L.${a.level}</div>
+        <div class="animal-name">${a.emoji}</div>
+      </div>`;
+    }).join('');
   }
 
-  // Real cowony events
-  const evts = d.real_events||[];
-  const elog = document.getElementById('cowony-events');
-  if(!evts.length) {
-    elog.innerHTML='<div style="color:#484f58;text-align:center;padding:20px;font-size:.8rem">No cowony events yet…</div>';
+  // Activity log
+  const acts = d.activity_log || [];
+  const alog = document.getElementById('activity-log');
+  if (!acts.length) {
+    alog.innerHTML = '<div style="color:#484f58;text-align:center;padding:22px;font-size:.8rem">Waiting for first action…</div>';
   } else {
-    elog.innerHTML = evts.map(e=>`
-      <div class="log-item">
-        <span class="log-time">${e.time}</span>
-        <span class="${e.kind==='earn'?'event-earn':'event-loss'}">${e.amount}</span>
-      </div>`).join('');
+    alog.innerHTML = acts.map(a =>
+      `<div class="log-item"><span class="log-time">${a.time}</span><span class="log-${a.kind||'info'}">${a.msg}</span></div>`
+    ).join('');
+  }
+
+  // Cowony events
+  const evts = d.real_events || [];
+  const elog = document.getElementById('cowony-events');
+  if (!evts.length) {
+    elog.innerHTML = '<div style="color:#484f58;text-align:center;padding:22px;font-size:.8rem">No cowony events yet…</div>';
+  } else {
+    elog.innerHTML = evts.map(e =>
+      `<div class="log-item"><span class="log-time">${e.time}</span><span class="${e.kind==='earn'?'log-earn':'log-loss'}">${e.amount}</span></div>`
+    ).join('');
   }
 
   // Command table
-  const stats=d.command_stats||{};
-  const keys=Object.keys(stats);
-  const maxV=keys.length?Math.max(...keys.map(k=>stats[k])):1;
-  const tbody=document.getElementById('cmd-body');
-  if(!keys.length) {
-    tbody.innerHTML=`<tr><td colspan="5" style="color:#484f58;text-align:center;padding:20px">${d.status==='online'?'Sending first commands…':'Waiting for bot…'}</td></tr>`;
+  const stats = d.command_stats || {};
+  const keys  = Object.keys(stats);
+  const maxV  = keys.length ? Math.max(...keys.map(k => stats[k])) : 1;
+  const tbody = document.getElementById('cmd-body');
+  if (!keys.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="color:#484f58;text-align:center;padding:22px">${d.status==='online' ? 'Sending first commands…' : 'Waiting for bot…'}</td></tr>`;
     return;
   }
-  tbody.innerHTML=keys.slice().sort((a,b)=>stats[b]-stats[a]).map(name=>{
-    const m=CMD_META[name]||{cls:'b-grind',cd:'—'};
-    const p=Math.round(stats[name]/maxV*100);
+  const catLabel = {
+    'tb-grind':'GRIND','tb-gamble':'GAMBLE','tb-bonus':'BONUS','tb-sell':'SELL'
+  };
+  tbody.innerHTML = keys.slice().sort((a, b) => stats[b] - stats[a]).map(name => {
+    const m = CMD_META[name] || {tb:'tb-grind', bar:'b-hunt', cd:'—'};
+    const p = Math.round(stats[name] / maxV * 100);
     return `<tr>
-      <td style="font-family:monospace;font-size:.77rem;color:#e6edf3;font-weight:600">owo ${name.toLowerCase()}</td>
-      <td><span class="badge ${m.cls}">${CAT[m.cls]||'CMD'}</span></td>
+      <td style="font-family:monospace;font-size:.76rem;font-weight:600">owo ${name.toLowerCase()}</td>
+      <td><span class="type-badge ${m.tb}">${catLabel[m.tb]||'CMD'}</span></td>
       <td style="color:#3fb950;font-weight:700">${fmt(stats[name])}</td>
       <td style="color:#6e7681">${m.cd}</td>
-      <td><div class="bar-bg"><div class="bar-fill" style="width:${p}%"></div></div></td>
+      <td><div class="bar-bg"><div class="bar-fill ${m.bar}" style="width:${p}%"></div></div></td>
     </tr>`;
   }).join('');
 }
 
 async function saveChannel() {
-  const val=document.getElementById('ch-input').value.trim();
-  const err=document.getElementById('ch-err');
-  if(!val){err.textContent='Enter a channel ID';err.style.display='block';return;}
-  err.style.display='none';
-  const res=await fetch('/api/set_channel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel_id:val})});
-  const data=await res.json();
-  if(data.success){document.getElementById('ch-modal').style.display='none';chModalShown=false;}
-  else{err.textContent=data.error||'Failed';err.style.display='block';}
+  const val = document.getElementById('ch-input').value.trim();
+  const err = document.getElementById('ch-err');
+  if (!val) { err.textContent = 'Enter channel ID'; err.style.display = 'block'; return; }
+  err.style.display = 'none';
+  const r = await fetch('/api/set_channel', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({channel_id:val})});
+  const data = await r.json();
+  if (data.success) { document.getElementById('ch-modal').style.display = 'none'; chModalShown = false; }
+  else { err.textContent = data.error || 'Failed'; err.style.display = 'block'; }
 }
 
 async function doLogout() {
-  if(!confirm('Logout and stop farming?')) return;
-  await fetch('/api/logout',{method:'POST'});
-  window.location.href='/login';
+  if (!confirm('Logout and stop farming?')) return;
+  await fetch('/api/logout', {method:'POST'});
+  window.location.href = '/login';
 }
 
 refresh();
-setInterval(refresh,3000);
+setInterval(refresh, 3000);
 </script>
 </body>
 </html>
