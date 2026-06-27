@@ -8,28 +8,25 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: #0d1117; color: #e6edf3;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      font-family: 'Segoe UI', system-ui, sans-serif;
       min-height: 100vh; padding: 22px 14px 48px;
     }
-
-    /* Header */
     header { text-align: center; margin-bottom: 22px; }
     header h1 {
-      font-size: 1.85rem; font-weight: 800;
+      font-size: 1.8rem; font-weight: 800;
       background: linear-gradient(135deg, #58a6ff 30%, #3fb950);
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     }
     header p { color: #6e7681; margin-top: 4px; font-size: .82rem; }
 
-    /* Status row */
     .status-row {
       display: flex; align-items: center; justify-content: center;
-      flex-wrap: wrap; gap: 12px; margin-bottom: 20px;
+      flex-wrap: wrap; gap: 10px; margin-bottom: 20px;
     }
     .pill {
       display: flex; align-items: center; gap: 7px;
       background: #161b22; border: 1px solid #21262d;
-      border-radius: 999px; padding: 6px 14px; font-size: .82rem; font-weight: 600;
+      border-radius: 999px; padding: 5px 14px; font-size: .8rem; font-weight: 600;
     }
     .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
     .dot-online  { background:#3fb950; box-shadow:0 0 6px #3fb950; animation:blink 2s infinite; }
@@ -38,137 +35,144 @@
     .dot-off     { background:#484f58; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
 
+    /* Channel setup modal */
+    .modal-bg {
+      position: fixed; inset: 0; background: #000000bb;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; padding: 20px;
+    }
+    .modal {
+      background: #161b22; border: 1px solid #30363d;
+      border-radius: 16px; padding: 30px 28px; width: 100%; max-width: 400px;
+    }
+    .modal h2 { font-size: 1.1rem; margin-bottom: 8px; }
+    .modal p  { color: #8b949e; font-size: .82rem; line-height: 1.6; margin-bottom: 18px; }
+    .modal input {
+      width: 100%; background: #0d1117; border: 1px solid #30363d;
+      border-radius: 8px; padding: 10px 13px;
+      color: #e6edf3; font-size: .92rem; outline: none;
+    }
+    .modal input:focus { border-color: #58a6ff; }
+    .modal-btn {
+      width: 100%; margin-top: 14px; padding: 11px;
+      background: #238636; border: none; border-radius: 8px;
+      color: #fff; font-size: .9rem; font-weight: 700; cursor: pointer;
+    }
+    .modal-btn:hover { background: #2ea043; }
+    .modal-err { color: #f85149; font-size: .8rem; margin-top: 8px; display: none; }
+
     /* Notices */
     .notice {
-      max-width: 860px; margin: 0 auto 18px; border-radius: 10px;
-      padding: 14px 18px; border: 1px solid; display: none;
+      max-width: 860px; margin: 0 auto 16px; border-radius: 10px;
+      padding: 13px 18px; border: 1px solid; display: none;
     }
-    .notice-warn { background:#1f1a0e; border-color:#f0883e; border-left:4px solid #f0883e; }
     .notice-err  { background:#1a0d0d; border-color:#f85149; border-left:4px solid #f85149; }
-    .notice-info { background:#0e1a2d; border-color:#58a6ff; border-left:4px solid #58a6ff; }
-    .notice h3 { font-size:.88rem; margin-bottom:6px; }
-    .notice-warn h3 { color:#f0883e; }
+    .notice-warn { background:#1c1500; border-color:#e3b341; border-left:4px solid #e3b341; }
+    .notice h3 { font-size:.88rem; margin-bottom:4px; }
     .notice-err  h3 { color:#f85149; }
-    .notice-info h3 { color:#58a6ff; }
-    .notice p, .notice li { color:#9ca3af; font-size:.82rem; line-height:1.7; }
-    .notice ol { padding-left:18px; }
-    .notice code {
-      background:#111827; padding:2px 6px; border-radius:4px;
-      font-family:monospace; color:#58a6ff; font-size:.8rem;
-    }
+    .notice-warn h3 { color:#e3b341; }
+    .notice p { color:#9ca3af; font-size:.81rem; line-height:1.6; }
 
-    /* Target bar */
-    .wrap { max-width:860px; margin:0 auto 16px; }
-    .card {
-      background:#161b22; border:1px solid #21262d; border-radius:12px; padding:18px 20px;
-    }
-    .target-header {
-      display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;
-    }
-    .target-title { font-size:.85rem; font-weight:600; }
-    .target-pct   { font-size:1.5rem; font-weight:800; color:#e3b341; }
-    .prog-bg { background:#21262d; border-radius:999px; height:10px; overflow:hidden; margin-bottom:7px; }
-    .prog-fill {
-      height:100%; border-radius:999px;
-      background:linear-gradient(90deg,#3fb950,#58a6ff);
-      transition:width .9s ease;
-    }
-    .target-sub { display:flex; justify-content:space-between; font-size:.74rem; color:#6e7681; }
-
-    /* Stat grid */
-    .grid {
-      display:grid;
-      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-      gap:12px; max-width:860px; margin:0 auto 16px;
-    }
+    /* Cards */
+    .wrap { max-width:860px; margin:0 auto 14px; }
+    .card { background:#161b22; border:1px solid #21262d; border-radius:12px; padding:18px 20px; }
     .card-label { font-size:.68rem; text-transform:uppercase; letter-spacing:1.1px; color:#6e7681; margin-bottom:6px; }
-    .card-value { font-size:1.7rem; font-weight:800; font-variant-numeric:tabular-nums; }
-    .card-sub   { font-size:.73rem; color:#6e7681; margin-top:3px; }
+    .card-value { font-size:1.65rem; font-weight:800; font-variant-numeric:tabular-nums; }
+    .card-sub   { font-size:.72rem; color:#6e7681; margin-top:3px; }
     .blue  { color:#58a6ff; } .green { color:#3fb950; }
     .gold  { color:#e3b341; } .purple{ color:#bc8cff; }
 
-    /* Info bar */
+    /* Target bar */
+    .target-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
+    .target-title  { font-size:.85rem; font-weight:600; }
+    .target-pct    { font-size:1.45rem; font-weight:800; color:#e3b341; }
+    .prog-bg  { background:#21262d; border-radius:999px; height:10px; overflow:hidden; margin-bottom:7px; }
+    .prog-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,#3fb950,#58a6ff); transition:width .9s ease; }
+    .target-sub { display:flex; justify-content:space-between; font-size:.73rem; color:#6e7681; }
+
+    .grid {
+      display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr));
+      gap:12px; max-width:860px; margin:0 auto 14px;
+    }
+
     .info-card {
       background:#161b22; border:1px solid #21262d; border-radius:12px;
-      padding:12px 18px; display:flex; flex-wrap:wrap; gap:16px; align-items:center;
+      padding:12px 18px; display:flex; flex-wrap:wrap; gap:14px; align-items:flex-start;
     }
-    .info-item { font-size:.8rem; }
+    .info-item  { font-size:.79rem; }
     .info-label { color:#6e7681; margin-right:4px; }
     .info-val   { color:#e6edf3; font-weight:600; }
-
-    /* Anti-detect badges */
-    .ad-row {
-      display:flex; flex-wrap:wrap; gap:8px; margin-top:12px;
-    }
+    .ad-row { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; width:100%; }
     .ad-badge {
-      display:flex; align-items:center; gap:5px;
-      font-size:.72rem; font-weight:600; padding:3px 10px;
-      border-radius:999px; border:1px solid;
+      font-size:.7rem; font-weight:600; padding:2px 9px; border-radius:999px; border:1px solid;
+      background:#0f2d1a; color:#3fb950; border-color:#3fb95044;
     }
-    .ad-on  { background:#0f2d1a; color:#3fb950; border-color:#3fb95044; }
-    .ad-off { background:#2d1a0e; color:#f0883e; border-color:#f0883e44; }
+
+    /* Logout */
+    .logout-btn {
+      background:none; border:1px solid #f8514966; color:#f85149;
+      border-radius:6px; padding:4px 10px; font-size:.74rem; cursor:pointer;
+      margin-left:auto;
+    }
+    .logout-btn:hover { background:#2d1218; }
 
     /* Command table */
-    .section { max-width:860px; margin:0 auto 16px; }
-    .section-title {
-      font-size:.7rem; text-transform:uppercase; letter-spacing:1.2px;
-      color:#6e7681; margin-bottom:9px;
-    }
+    .section { max-width:860px; margin:0 auto 14px; }
+    .section-title { font-size:.7rem; text-transform:uppercase; letter-spacing:1.2px; color:#6e7681; margin-bottom:8px; }
     table { width:100%; border-collapse:collapse; }
-    th, td { padding:9px 13px; text-align:left; border-bottom:1px solid #21262d; font-size:.81rem; }
-    th { color:#6e7681; font-weight:600; font-size:.69rem; text-transform:uppercase; letter-spacing:.9px; }
+    th, td { padding:8px 13px; text-align:left; border-bottom:1px solid #21262d; font-size:.8rem; }
+    th { color:#6e7681; font-weight:600; font-size:.68rem; text-transform:uppercase; letter-spacing:.9px; }
     tr:last-child td { border-bottom:none; }
     tr:hover td { background:#1c2128; }
-    .bar-bg   { background:#21262d; border-radius:4px; height:5px; min-width:60px; }
+    .bar-bg   { background:#21262d; border-radius:4px; height:5px; min-width:55px; }
     .bar-fill { height:100%; background:#58a6ff; border-radius:4px; transition:width .6s; }
-    .badge {
-      display:inline-block; padding:2px 7px; border-radius:99px;
-      font-size:.66rem; font-weight:700; letter-spacing:.4px;
-    }
+    .badge { display:inline-block; padding:2px 7px; border-radius:99px; font-size:.65rem; font-weight:700; }
     .b-grind  { background:#0f2d1a; color:#3fb950; border:1px solid #3fb95033; }
     .b-gamble { background:#1a0e2d; color:#bc8cff; border:1px solid #bc8cff33; }
     .b-bonus  { background:#2d1a0e; color:#e3b341; border:1px solid #e3b34133; }
     .b-sell   { background:#0e1f2d; color:#58a6ff; border:1px solid #58a6ff33; }
 
-    /* Pause overlay */
     .pause-banner {
-      max-width:860px; margin:0 auto 16px;
-      background:#1a1200; border:1px solid #e3b341;
-      border-left:4px solid #e3b341; border-radius:10px;
-      padding:12px 18px; display:none;
+      max-width:860px; margin:0 auto 14px; background:#1a1200;
+      border:1px solid #e3b341; border-left:4px solid #e3b341;
+      border-radius:10px; padding:11px 16px; display:none;
     }
-    .pause-banner h3 { color:#e3b341; font-size:.88rem; }
-    .pause-banner p  { color:#9ca3af; font-size:.8rem; margin-top:4px; }
+    .pause-banner h3 { color:#e3b341; font-size:.86rem; }
+    .pause-banner p  { color:#9ca3af; font-size:.79rem; margin-top:3px; }
 
-    footer { text-align:center; color:#373e47; font-size:.7rem; margin-top:28px; }
+    footer { text-align:center; color:#373e47; font-size:.7rem; margin-top:26px; }
   </style>
 </head>
 <body>
+
+<!-- Channel ID setup modal -->
+<div class="modal-bg" id="ch-modal" style="display:none">
+  <div class="modal">
+    <h2>Set Channel ID</h2>
+    <p>Enter the numeric ID of the Discord channel where OWO commands should be sent.<br><br>
+       <strong>How to get it:</strong> Right-click the channel in Discord → <em>Copy Channel ID</em><br>
+       (Enable Developer Mode in Settings → Advanced first)</p>
+    <input type="text" id="ch-input" placeholder="e.g. 1234567890123456789"
+           oninput="this.value=this.value.replace(/\D/g,'')"
+           onkeydown="if(event.key==='Enter') saveChannel()" />
+    <div class="modal-err" id="ch-err"></div>
+    <button class="modal-btn" onclick="saveChannel()">Start Farming</button>
+  </div>
+</div>
 
 <header>
   <h1>OWO Auto-Farmer</h1>
   <p>24/7 Automatic &nbsp;·&nbsp; Anti-Detection &nbsp;·&nbsp; Max Cowony</p>
 </header>
 
-<!-- Status pills -->
 <div class="status-row">
   <div class="pill"><div class="dot" id="dot"></div><span id="status-text">Loading…</span></div>
-  <div class="pill" id="ad-pill"><div class="dot dot-online"></div><span>Anti-Detect ON</span></div>
+  <div class="pill"><div class="dot dot-online"></div><span>Anti-Detect ON</span></div>
 </div>
 
 <!-- Notices -->
-<div id="notice-notoken" class="notice notice-warn">
-  <h3>Setup Required — Enter Your Secrets</h3>
-  <p>Open the <strong>Secrets</strong> tab (🔒 lock icon) in Replit and add:</p>
-  <ol style="margin-top:7px">
-    <li><code>DISCORD_TOKEN</code> — your Discord account token</li>
-    <li><code>CHANNEL_ID</code> — numeric ID of the OWO farming channel</li>
-  </ol>
-  <p style="margin-top:7px">After saving both secrets, click <strong>Restart</strong> on the workflow. Bot starts automatically.</p>
-</div>
-<div id="notice-error" class="notice notice-err">
-  <h3>Error Detected</h3>
-  <p id="err-msg"></p>
+<div id="notice-err" class="notice notice-err">
+  <h3>Error</h3><p id="err-msg"></p>
 </div>
 <div id="pause-banner" class="pause-banner">
   <h3>⏸ Anti-Detection Break Active</h3>
@@ -180,7 +184,7 @@
   <div class="card">
     <div class="target-header">
       <span class="target-title">Daily Target Progress
-        <span style="color:#6e7681;font-size:.73rem;font-weight:400">&nbsp;(goal: 85,000 cowony/day)</span>
+        <span style="color:#6e7681;font-size:.72rem;font-weight:400">&nbsp;(goal: 85,000 cowony/day)</span>
       </span>
       <span class="target-pct" id="target-pct">0%</span>
     </div>
@@ -216,68 +220,63 @@
   </div>
 </div>
 
-<!-- Info + anti-detect badges -->
+<!-- Info bar -->
 <div class="wrap">
   <div class="info-card">
     <div class="info-item"><span class="info-label">Account:</span><span class="info-val" id="account">—</span></div>
     <div class="info-item"><span class="info-label">Channel:</span><span class="info-val" id="channel">—</span></div>
     <div class="info-item"><span class="info-label">Last cmd:</span><span class="info-val" id="last-cmd">—</span></div>
     <div class="info-item"><span class="info-label">Started:</span><span class="info-val" id="started">—</span></div>
+    <button class="logout-btn" onclick="doLogout()">Logout</button>
     <div class="ad-row">
-      <span class="ad-badge ad-on">✓ Typing Simulation</span>
-      <span class="ad-badge ad-on">✓ Random Jitter</span>
-      <span class="ad-badge ad-on">✓ Human Breaks</span>
-      <span class="ad-badge ad-on">✓ Skip Simulation</span>
-      <span class="ad-badge ad-on">✓ Rate-Limit Safe</span>
-      <span class="ad-badge ad-on">✓ Send Lock</span>
+      <span class="ad-badge">✓ Typing Simulation</span>
+      <span class="ad-badge">✓ Random Jitter ±20%</span>
+      <span class="ad-badge">✓ Human Breaks</span>
+      <span class="ad-badge">✓ 4% Skip Rate</span>
+      <span class="ad-badge">✓ Rate-Limit Safe</span>
+      <span class="ad-badge">✓ Send Lock</span>
     </div>
   </div>
 </div>
 
-<!-- Command table -->
-<div class="section" style="margin-top:16px">
-  <div class="section-title">All Active Commands</div>
+<!-- Live command breakdown -->
+<div class="section" style="margin-top:14px">
+  <div class="section-title">Live Command Breakdown</div>
   <div class="card" style="padding:0;overflow:hidden">
     <table>
-      <thead>
-        <tr>
-          <th>Command</th><th>Type</th><th>Sent</th><th>Cooldown</th><th style="width:130px">Activity</th>
-        </tr>
-      </thead>
-      <tbody id="cmd-body">
-        <tr><td colspan="5" style="color:#484f58;text-align:center;padding:22px">Waiting for bot to connect…</td></tr>
-      </tbody>
+      <thead><tr><th>Command</th><th>Type</th><th>Sent</th><th>Cooldown</th><th style="width:120px">Activity</th></tr></thead>
+      <tbody id="cmd-body"><tr><td colspan="5" style="color:#484f58;text-align:center;padding:20px">Waiting for bot…</td></tr></tbody>
     </table>
   </div>
 </div>
 
 <!-- All commands reference -->
 <div class="section">
-  <div class="section-title">Farming Plan (all 14 commands)</div>
+  <div class="section-title">All 14 Farming Commands</div>
   <div class="card" style="padding:0;overflow:hidden">
     <table>
       <thead><tr><th>Command</th><th>Type</th><th>Cooldown</th><th>Est. Earn</th></tr></thead>
       <tbody>
-        <tr><td style="font-family:monospace">owo battle</td><td><span class="badge b-grind">GRIND</span></td><td>1 min</td><td class="green">+55 / use</td></tr>
-        <tr><td style="font-family:monospace">owo pray</td><td><span class="badge b-grind">GRIND</span></td><td>5 min</td><td class="green">+65 / use</td></tr>
-        <tr><td style="font-family:monospace">owo curse</td><td><span class="badge b-grind">GRIND</span></td><td>5 min</td><td class="green">+65 / use</td></tr>
-        <tr><td style="font-family:monospace">owo work</td><td><span class="badge b-grind">GRIND</span></td><td>15 min</td><td class="green">+180 / use</td></tr>
-        <tr><td style="font-family:monospace">owo crime</td><td><span class="badge b-grind">GRIND</span></td><td>30 min</td><td class="green">+220 / use</td></tr>
-        <tr><td style="font-family:monospace">owo hunt</td><td><span class="badge b-grind">GRIND</span></td><td>30 min</td><td class="green">+130 / use</td></tr>
-        <tr><td style="font-family:monospace">owo fish</td><td><span class="badge b-grind">GRIND</span></td><td>30 min</td><td class="green">+130 / use</td></tr>
-        <tr><td style="font-family:monospace">owo slots 500</td><td><span class="badge b-gamble">GAMBLE</span></td><td>10 min</td><td class="green">+220 avg</td></tr>
-        <tr><td style="font-family:monospace">owo coinflip 500</td><td><span class="badge b-gamble">GAMBLE</span></td><td>5 min</td><td class="green">+220 avg</td></tr>
-        <tr><td style="font-family:monospace">owo sell all</td><td><span class="badge b-sell">SELL</span></td><td>2 hrs</td><td class="green">+600 avg</td></tr>
-        <tr><td style="font-family:monospace">owo sell gems</td><td><span class="badge b-sell">SELL</span></td><td>2 hrs</td><td class="green">+300 avg</td></tr>
-        <tr><td style="font-family:monospace">owo checklist</td><td><span class="badge b-bonus">BONUS</span></td><td>1 hr</td><td class="green">+50 avg</td></tr>
-        <tr><td style="font-family:monospace">owo daily</td><td><span class="badge b-bonus">BONUS</span></td><td>12 hrs</td><td class="green">+6,000</td></tr>
-        <tr><td style="font-family:monospace">owo weekly</td><td><span class="badge b-bonus">BONUS</span></td><td>7 days</td><td class="green">+28,000</td></tr>
+        <tr><td style="font-family:monospace;font-size:.78rem">owo battle</td><td><span class="badge b-grind">GRIND</span></td><td style="color:#6e7681">1 min</td><td class="green">+55 / use</td></tr>
+        <tr><td style="font-family:monospace;font-size:.78rem">owo pray</td><td><span class="badge b-grind">GRIND</span></td><td style="color:#6e7681">5 min</td><td class="green">+65 / use</td></tr>
+        <tr><td style="font-family:monospace;font-size:.78rem">owo curse</td><td><span class="badge b-grind">GRIND</span></td><td style="color:#6e7681">5 min</td><td class="green">+65 / use</td></tr>
+        <tr><td style="font-family:monospace;font-size:.78rem">owo work</td><td><span class="badge b-grind">GRIND</span></td><td style="color:#6e7681">15 min</td><td class="green">+180 / use</td></tr>
+        <tr><td style="font-family:monospace;font-size:.78rem">owo crime</td><td><span class="badge b-grind">GRIND</span></td><td style="color:#6e7681">30 min</td><td class="green">+220 / use</td></tr>
+        <tr><td style="font-family:monospace;font-size:.78rem">owo hunt</td><td><span class="badge b-grind">GRIND</span></td><td style="color:#6e7681">30 min</td><td class="green">+130 / use</td></tr>
+        <tr><td style="font-family:monospace;font-size:.78rem">owo fish</td><td><span class="badge b-grind">GRIND</span></td><td style="color:#6e7681">30 min</td><td class="green">+130 / use</td></tr>
+        <tr><td style="font-family:monospace;font-size:.78rem">owo slots 500</td><td><span class="badge b-gamble">GAMBLE</span></td><td style="color:#6e7681">10 min</td><td class="green">+220 avg</td></tr>
+        <tr><td style="font-family:monospace;font-size:.78rem">owo coinflip 500</td><td><span class="badge b-gamble">GAMBLE</span></td><td style="color:#6e7681">5 min</td><td class="green">+220 avg</td></tr>
+        <tr><td style="font-family:monospace;font-size:.78rem">owo sell all</td><td><span class="badge b-sell">SELL</span></td><td style="color:#6e7681">2 hrs</td><td class="green">+600 avg</td></tr>
+        <tr><td style="font-family:monospace;font-size:.78rem">owo sell gems</td><td><span class="badge b-sell">SELL</span></td><td style="color:#6e7681">2 hrs</td><td class="green">+300 avg</td></tr>
+        <tr><td style="font-family:monospace;font-size:.78rem">owo checklist</td><td><span class="badge b-bonus">BONUS</span></td><td style="color:#6e7681">1 hr</td><td class="green">+50 avg</td></tr>
+        <tr><td style="font-family:monospace;font-size:.78rem">owo daily</td><td><span class="badge b-bonus">BONUS</span></td><td style="color:#6e7681">12 hrs</td><td class="green">+6,000</td></tr>
+        <tr><td style="font-family:monospace;font-size:.78rem">owo weekly</td><td><span class="badge b-bonus">BONUS</span></td><td style="color:#6e7681">7 days</td><td class="green">+28,000</td></tr>
       </tbody>
     </table>
   </div>
 </div>
 
-<footer>Auto-refreshes every 3s &nbsp;·&nbsp; OWO Auto-Farmer with Anti-Detection</footer>
+<footer>Auto-refreshes every 3s &nbsp;·&nbsp; OWO Auto-Farmer</footer>
 
 <script>
 const CMD_META = {
@@ -289,91 +288,118 @@ const CMD_META = {
   SellGems:{cls:'b-sell',  cd:'2 hrs'},  Checklist:{cls:'b-bonus',cd:'1 hr'},
   Daily:{cls:'b-bonus',    cd:'12 hrs'}, Weekly:{cls:'b-bonus', cd:'7 days'},
 };
-const CAT_LABEL = {
-  'b-grind':'GRIND','b-gamble':'GAMBLE','b-bonus':'BONUS','b-sell':'SELL'
-};
+const CAT_LABEL = {'b-grind':'GRIND','b-gamble':'GAMBLE','b-bonus':'BONUS','b-sell':'SELL'};
 const STATUS = {
   online:       {cls:'dot-online',  lbl:'Online — Farming Active'},
-  connecting:   {cls:'dot-pending', lbl:'Connecting…'},
+  connecting:   {cls:'dot-pending', lbl:'Connecting to Discord…'},
   reconnecting: {cls:'dot-pending', lbl:'Reconnecting…'},
-  waiting:      {cls:'dot-pending', lbl:'Starting up…'},
-  no_token:     {cls:'dot-off',     lbl:'Setup Required'},
-  error:        {cls:'dot-error',   lbl:'Error'},
+  waiting:      {cls:'dot-pending', lbl:'Waiting for login…'},
+  no_channel:   {cls:'dot-pending', lbl:'Channel ID needed'},
+  error:        {cls:'dot-error',   lbl:'Error — check below'},
 };
 
-const fmt = n => Number(n||0).toLocaleString();
+const fmt  = n => Number(n||0).toLocaleString();
 const fmtT = s => {
   if(!s) return '—';
   const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
 };
 
+let channelModalShown = false;
+
 async function refresh() {
   let d;
   try { d = await (await fetch('/api/stats')).json(); }
-  catch { document.getElementById('status-text').textContent='Cannot reach server'; return; }
+  catch { return; }
 
-  // Status
+  // Status pill
   const {cls, lbl} = STATUS[d.status] || {cls:'dot-off', lbl:d.status};
   document.getElementById('dot').className = 'dot ' + cls;
   document.getElementById('status-text').textContent = lbl;
 
-  // Notices
-  document.getElementById('notice-notoken').style.display = d.status==='no_token' ? 'block' : 'none';
-  const errEl = document.getElementById('notice-error');
+  // Show channel modal if needed
+  if (!d.channel_id_set && !channelModalShown && d.status !== 'waiting') {
+    channelModalShown = true;
+    document.getElementById('ch-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('ch-input').focus(), 100);
+  }
+
+  // Error notice
+  const errEl = document.getElementById('notice-err');
   errEl.style.display = (d.status==='error' && d.last_error) ? 'block' : 'none';
   if(d.last_error) document.getElementById('err-msg').textContent = d.last_error;
 
   // Pause banner
   const pb = document.getElementById('pause-banner');
   pb.style.display = d.paused ? 'block' : 'none';
-  if(d.paused) document.getElementById('pause-reason').textContent = d.pause_reason || 'Human-like break active…';
+  if(d.paused) document.getElementById('pause-reason').textContent = d.pause_reason||'Human-like break…';
 
-  // Target
+  // Target bar
   const target = d.daily_target || 85000;
   const earned = d.cowony_earned || 0;
   const daily  = d.daily_rate   || 0;
-  const pct    = Math.min(Math.round(earned / target * 100), 100);
-  document.getElementById('target-pct').textContent = pct+'%';
-  document.getElementById('prog-fill').style.width  = pct+'%';
+  const pct    = Math.min(Math.round(earned/target*100), 100);
+  document.getElementById('target-pct').textContent   = pct+'%';
+  document.getElementById('prog-fill').style.width    = pct+'%';
   document.getElementById('earned-label').textContent = fmt(earned)+' cowony earned';
   document.getElementById('rate-label').textContent   = 'Rate: '+fmt(daily)+' / day';
 
-  // Cards
+  // Stat cards
   document.getElementById('total').textContent  = fmt(d.total_commands);
   document.getElementById('earned').textContent = fmt(earned);
   document.getElementById('daily').textContent  = fmt(daily);
   document.getElementById('uptime').textContent = fmtT(d.uptime_seconds);
 
-  // Info
-  document.getElementById('account').textContent  = d.logged_in_as || '—';
+  // Info bar
+  document.getElementById('account').textContent  = d.logged_in_as||'—';
   document.getElementById('channel').textContent  = d.channel_name ? '#'+d.channel_name : (d.channel_id||'—');
-  document.getElementById('last-cmd').textContent = d.last_command_time || '—';
-  document.getElementById('started').textContent  = d.start_time || '—';
+  document.getElementById('last-cmd').textContent = d.last_command_time||'—';
+  document.getElementById('started').textContent  = d.start_time||'—';
 
   // Command table
-  const stats  = d.command_stats || {};
+  const stats  = d.command_stats||{};
   const keys   = Object.keys(stats);
   const maxVal = keys.length ? Math.max(...keys.map(k=>stats[k])) : 1;
   const tbody  = document.getElementById('cmd-body');
-
   if(!keys.length) {
-    const msg = d.status==='online' ? 'Sending first commands…' : 'Waiting for bot to connect…';
-    tbody.innerHTML = `<tr><td colspan="5" style="color:#484f58;text-align:center;padding:22px">${msg}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="color:#484f58;text-align:center;padding:20px">${
+      d.status==='online' ? 'Sending first commands…' : 'Waiting for bot to connect…'
+    }</td></tr>`;
     return;
   }
-
   tbody.innerHTML = keys.slice().sort((a,b)=>stats[b]-stats[a]).map(name=>{
-    const m = CMD_META[name] || {cls:'b-grind', cd:'—'};
-    const p = Math.round(stats[name]/maxVal*100);
+    const m=CMD_META[name]||{cls:'b-grind',cd:'—'};
+    const p=Math.round(stats[name]/maxVal*100);
     return `<tr>
-      <td style="font-family:monospace;font-size:.8rem;color:#e6edf3;font-weight:600">owo ${name.toLowerCase()}</td>
+      <td style="font-family:monospace;font-size:.78rem;color:#e6edf3;font-weight:600">owo ${name.toLowerCase()}</td>
       <td><span class="badge ${m.cls}">${CAT_LABEL[m.cls]||'CMD'}</span></td>
       <td style="color:#3fb950;font-weight:700">${fmt(stats[name])}</td>
       <td style="color:#6e7681">${m.cd}</td>
       <td><div class="bar-bg"><div class="bar-fill" style="width:${p}%"></div></div></td>
     </tr>`;
   }).join('');
+}
+
+async function saveChannel() {
+  const val = document.getElementById('ch-input').value.trim();
+  const err = document.getElementById('ch-err');
+  if(!val) { err.textContent='Enter a channel ID'; err.style.display='block'; return; }
+  err.style.display='none';
+  const res  = await fetch('/api/set_channel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel_id:val})});
+  const data = await res.json();
+  if(data.success) {
+    document.getElementById('ch-modal').style.display='none';
+    channelModalShown = false;
+  } else {
+    err.textContent = data.error||'Failed';
+    err.style.display='block';
+  }
+}
+
+async function doLogout() {
+  if(!confirm('Logout and stop farming?')) return;
+  await fetch('/api/logout',{method:'POST'});
+  window.location.href='/login';
 }
 
 refresh();
