@@ -6,152 +6,125 @@
   <title>OWO Auto-Farmer</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      background: #0d1117; color: #e6edf3;
-      font-family: 'Segoe UI', system-ui, sans-serif;
-      min-height: 100vh; padding: 22px 14px 48px;
-    }
-    header { text-align: center; margin-bottom: 22px; }
-    header h1 {
-      font-size: 1.8rem; font-weight: 800;
-      background: linear-gradient(135deg, #58a6ff 30%, #3fb950);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    header p { color: #6e7681; margin-top: 4px; font-size: .82rem; }
+    body { background:#0d1117; color:#e6edf3; font-family:'Segoe UI',system-ui,sans-serif; min-height:100vh; padding:20px 14px 48px; }
 
-    .status-row {
-      display: flex; align-items: center; justify-content: center;
-      flex-wrap: wrap; gap: 10px; margin-bottom: 20px;
-    }
-    .pill {
-      display: flex; align-items: center; gap: 7px;
-      background: #161b22; border: 1px solid #21262d;
-      border-radius: 999px; padding: 5px 14px; font-size: .8rem; font-weight: 600;
-    }
-    .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    header { text-align:center; margin-bottom:20px; }
+    header h1 { font-size:1.75rem; font-weight:800; background:linear-gradient(135deg,#58a6ff 30%,#3fb950); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    header p  { color:#6e7681; margin-top:4px; font-size:.8rem; }
+
+    .status-row { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:9px; margin-bottom:18px; }
+    .pill { display:flex; align-items:center; gap:7px; background:#161b22; border:1px solid #21262d; border-radius:999px; padding:5px 13px; font-size:.79rem; font-weight:600; }
+    .dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
     .dot-online  { background:#3fb950; box-shadow:0 0 6px #3fb950; animation:blink 2s infinite; }
     .dot-pending { background:#f0883e; box-shadow:0 0 6px #f0883e; animation:blink 1.2s infinite; }
     .dot-error   { background:#f85149; }
     .dot-off     { background:#484f58; }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
 
-    /* Channel setup modal */
-    .modal-bg {
-      position: fixed; inset: 0; background: #000000bb;
-      display: flex; align-items: center; justify-content: center;
-      z-index: 100; padding: 20px;
-    }
-    .modal {
-      background: #161b22; border: 1px solid #30363d;
-      border-radius: 16px; padding: 30px 28px; width: 100%; max-width: 400px;
-    }
-    .modal h2 { font-size: 1.1rem; margin-bottom: 8px; }
-    .modal p  { color: #8b949e; font-size: .82rem; line-height: 1.6; margin-bottom: 18px; }
-    .modal input {
-      width: 100%; background: #0d1117; border: 1px solid #30363d;
-      border-radius: 8px; padding: 10px 13px;
-      color: #e6edf3; font-size: .92rem; outline: none;
-    }
-    .modal input:focus { border-color: #58a6ff; }
-    .modal-btn {
-      width: 100%; margin-top: 14px; padding: 11px;
-      background: #238636; border: none; border-radius: 8px;
-      color: #fff; font-size: .9rem; font-weight: 700; cursor: pointer;
-    }
-    .modal-btn:hover { background: #2ea043; }
-    .modal-err { color: #f85149; font-size: .8rem; margin-top: 8px; display: none; }
+    /* Channel modal */
+    .modal-bg { position:fixed; inset:0; background:#000000bb; display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
+    .modal { background:#161b22; border:1px solid #30363d; border-radius:16px; padding:28px 26px; width:100%; max-width:400px; }
+    .modal h2 { font-size:1.05rem; margin-bottom:8px; }
+    .modal p  { color:#8b949e; font-size:.8rem; line-height:1.6; margin-bottom:16px; }
+    .modal input { width:100%; background:#0d1117; border:1px solid #30363d; border-radius:8px; padding:10px 13px; color:#e6edf3; font-size:.9rem; outline:none; }
+    .modal input:focus { border-color:#58a6ff; }
+    .modal-btn { width:100%; margin-top:12px; padding:11px; background:#238636; border:none; border-radius:8px; color:#fff; font-size:.9rem; font-weight:700; cursor:pointer; }
+    .modal-btn:hover { background:#2ea043; }
+    .modal-err { color:#f85149; font-size:.78rem; margin-top:7px; display:none; }
 
     /* Notices */
-    .notice {
-      max-width: 860px; margin: 0 auto 16px; border-radius: 10px;
-      padding: 13px 18px; border: 1px solid; display: none;
-    }
+    .notice { max-width:860px; margin:0 auto 14px; border-radius:10px; padding:12px 16px; border:1px solid; display:none; }
     .notice-err  { background:#1a0d0d; border-color:#f85149; border-left:4px solid #f85149; }
     .notice-warn { background:#1c1500; border-color:#e3b341; border-left:4px solid #e3b341; }
-    .notice h3 { font-size:.88rem; margin-bottom:4px; }
+    .notice h3 { font-size:.86rem; margin-bottom:3px; }
     .notice-err  h3 { color:#f85149; }
     .notice-warn h3 { color:#e3b341; }
-    .notice p { color:#9ca3af; font-size:.81rem; line-height:1.6; }
+    .notice p { color:#9ca3af; font-size:.8rem; line-height:1.6; }
 
-    /* Cards */
-    .wrap { max-width:860px; margin:0 auto 14px; }
-    .card { background:#161b22; border:1px solid #21262d; border-radius:12px; padding:18px 20px; }
-    .card-label { font-size:.68rem; text-transform:uppercase; letter-spacing:1.1px; color:#6e7681; margin-bottom:6px; }
-    .card-value { font-size:1.65rem; font-weight:800; font-variant-numeric:tabular-nums; }
-    .card-sub   { font-size:.72rem; color:#6e7681; margin-top:3px; }
-    .blue  { color:#58a6ff; } .green { color:#3fb950; }
-    .gold  { color:#e3b341; } .purple{ color:#bc8cff; }
+    /* Layout */
+    .wrap { max-width:860px; margin:0 auto 13px; }
+    .card { background:#161b22; border:1px solid #21262d; border-radius:12px; padding:17px 19px; }
+    .card-label { font-size:.67rem; text-transform:uppercase; letter-spacing:1.1px; color:#6e7681; margin-bottom:5px; }
+    .card-value { font-size:1.6rem; font-weight:800; font-variant-numeric:tabular-nums; }
+    .card-sub   { font-size:.71rem; color:#6e7681; margin-top:2px; }
+    .blue{color:#58a6ff} .green{color:#3fb950} .gold{color:#e3b341} .purple{color:#bc8cff}
 
     /* Target bar */
-    .target-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px; }
-    .target-title  { font-size:.85rem; font-weight:600; }
-    .target-pct    { font-size:1.45rem; font-weight:800; color:#e3b341; }
-    .prog-bg  { background:#21262d; border-radius:999px; height:10px; overflow:hidden; margin-bottom:7px; }
+    .target-header { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:9px; }
+    .target-title  { font-size:.84rem; font-weight:600; }
+    .target-pct    { font-size:1.4rem; font-weight:800; color:#e3b341; }
+    .prog-bg  { background:#21262d; border-radius:999px; height:10px; overflow:hidden; margin-bottom:6px; }
     .prog-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,#3fb950,#58a6ff); transition:width .9s ease; }
-    .target-sub { display:flex; justify-content:space-between; font-size:.73rem; color:#6e7681; }
+    .target-sub { display:flex; justify-content:space-between; font-size:.72rem; color:#6e7681; }
 
-    .grid {
-      display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr));
-      gap:12px; max-width:860px; margin:0 auto 14px;
-    }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(155px,1fr)); gap:11px; max-width:860px; margin:0 auto 13px; }
 
-    .info-card {
-      background:#161b22; border:1px solid #21262d; border-radius:12px;
-      padding:12px 18px; display:flex; flex-wrap:wrap; gap:14px; align-items:flex-start;
-    }
-    .info-item  { font-size:.79rem; }
+    /* Smart features row */
+    .smart-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:11px; max-width:860px; margin:0 auto 13px; }
+    .smart-card { background:#161b22; border:1px solid #21262d; border-radius:12px; padding:13px 15px; }
+    .smart-label { font-size:.67rem; text-transform:uppercase; letter-spacing:1px; color:#6e7681; margin-bottom:4px; }
+    .smart-val   { font-size:1.3rem; font-weight:800; color:#58a6ff; }
+    .smart-sub   { font-size:.69rem; color:#6e7681; margin-top:2px; }
+
+    /* Info bar */
+    .info-card { background:#161b22; border:1px solid #21262d; border-radius:12px; padding:12px 17px; display:flex; flex-wrap:wrap; gap:13px; align-items:flex-start; }
+    .info-item  { font-size:.78rem; }
     .info-label { color:#6e7681; margin-right:4px; }
     .info-val   { color:#e6edf3; font-weight:600; }
-    .ad-row { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; width:100%; }
-    .ad-badge {
-      font-size:.7rem; font-weight:600; padding:2px 9px; border-radius:999px; border:1px solid;
-      background:#0f2d1a; color:#3fb950; border-color:#3fb95044;
-    }
-
-    /* Logout */
-    .logout-btn {
-      background:none; border:1px solid #f8514966; color:#f85149;
-      border-radius:6px; padding:4px 10px; font-size:.74rem; cursor:pointer;
-      margin-left:auto;
-    }
+    .ad-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:9px; width:100%; }
+    .ad-badge { font-size:.68rem; font-weight:600; padding:2px 8px; border-radius:999px; background:#0f2d1a; color:#3fb950; border:1px solid #3fb95044; }
+    .team-badge { background:#1a0e2d; color:#bc8cff; border-color:#bc8cff44; }
+    .logout-btn { background:none; border:1px solid #f8514966; color:#f85149; border-radius:6px; padding:4px 10px; font-size:.73rem; cursor:pointer; margin-left:auto; }
     .logout-btn:hover { background:#2d1218; }
 
+    /* Two-panel layout */
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:13px; max-width:860px; margin:0 auto 13px; }
+    @media(max-width:600px) { .two-col { grid-template-columns:1fr; } }
+
+    /* Activity log */
+    .log-item { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #21262d; font-size:.79rem; }
+    .log-item:last-child { border-bottom:none; }
+    .log-time { color:#484f58; font-size:.7rem; flex-shrink:0; font-family:monospace; }
+    .log-earn { color:#3fb950; font-weight:600; }
+    .log-loss { color:#f85149; }
+    .log-warn { color:#f0883e; }
+    .log-info { color:#8b949e; }
+
     /* Command table */
-    .section { max-width:860px; margin:0 auto 14px; }
-    .section-title { font-size:.7rem; text-transform:uppercase; letter-spacing:1.2px; color:#6e7681; margin-bottom:8px; }
+    .section { max-width:860px; margin:0 auto 13px; }
+    .section-title { font-size:.69rem; text-transform:uppercase; letter-spacing:1.2px; color:#6e7681; margin-bottom:8px; }
     table { width:100%; border-collapse:collapse; }
-    th, td { padding:8px 13px; text-align:left; border-bottom:1px solid #21262d; font-size:.8rem; }
-    th { color:#6e7681; font-weight:600; font-size:.68rem; text-transform:uppercase; letter-spacing:.9px; }
+    th,td { padding:8px 12px; text-align:left; border-bottom:1px solid #21262d; font-size:.79rem; }
+    th { color:#6e7681; font-weight:600; font-size:.67rem; text-transform:uppercase; letter-spacing:.9px; }
     tr:last-child td { border-bottom:none; }
     tr:hover td { background:#1c2128; }
-    .bar-bg   { background:#21262d; border-radius:4px; height:5px; min-width:55px; }
+    .bar-bg   { background:#21262d; border-radius:4px; height:5px; min-width:50px; }
     .bar-fill { height:100%; background:#58a6ff; border-radius:4px; transition:width .6s; }
-    .badge { display:inline-block; padding:2px 7px; border-radius:99px; font-size:.65rem; font-weight:700; }
+    .badge { display:inline-block; padding:2px 6px; border-radius:99px; font-size:.64rem; font-weight:700; }
     .b-grind  { background:#0f2d1a; color:#3fb950; border:1px solid #3fb95033; }
     .b-gamble { background:#1a0e2d; color:#bc8cff; border:1px solid #bc8cff33; }
     .b-bonus  { background:#2d1a0e; color:#e3b341; border:1px solid #e3b34133; }
     .b-sell   { background:#0e1f2d; color:#58a6ff; border:1px solid #58a6ff33; }
 
-    .pause-banner {
-      max-width:860px; margin:0 auto 14px; background:#1a1200;
-      border:1px solid #e3b341; border-left:4px solid #e3b341;
-      border-radius:10px; padding:11px 16px; display:none;
-    }
-    .pause-banner h3 { color:#e3b341; font-size:.86rem; }
-    .pause-banner p  { color:#9ca3af; font-size:.79rem; margin-top:3px; }
+    /* Pause banner */
+    .pause-banner { max-width:860px; margin:0 auto 13px; background:#1a1200; border:1px solid #e3b341; border-left:4px solid #e3b341; border-radius:10px; padding:10px 15px; display:none; }
+    .pause-banner h3 { color:#e3b341; font-size:.85rem; }
+    .pause-banner p  { color:#9ca3af; font-size:.78rem; margin-top:3px; }
 
-    footer { text-align:center; color:#373e47; font-size:.7rem; margin-top:26px; }
+    /* Real cowony events */
+    .event-earn { color:#3fb950; font-weight:700; }
+    .event-loss { color:#f85149; font-weight:700; }
+
+    footer { text-align:center; color:#373e47; font-size:.69rem; margin-top:24px; }
   </style>
 </head>
 <body>
 
-<!-- Channel ID setup modal -->
+<!-- Channel modal -->
 <div class="modal-bg" id="ch-modal" style="display:none">
   <div class="modal">
-    <h2>Set Channel ID</h2>
-    <p>Enter the numeric ID of the Discord channel where OWO commands should be sent.<br><br>
-       <strong>How to get it:</strong> Right-click the channel in Discord → <em>Copy Channel ID</em><br>
-       (Enable Developer Mode in Settings → Advanced first)</p>
+    <h2>Enter Channel ID</h2>
+    <p>Right-click the OWO farming channel in Discord → <strong>Copy Channel ID</strong><br><small style="color:#484f58">(Enable Developer Mode in Discord Settings → Advanced first)</small></p>
     <input type="text" id="ch-input" placeholder="e.g. 1234567890123456789"
            oninput="this.value=this.value.replace(/\D/g,'')"
            onkeydown="if(event.key==='Enter') saveChannel()" />
@@ -162,35 +135,34 @@
 
 <header>
   <h1>OWO Auto-Farmer</h1>
-  <p>24/7 Automatic &nbsp;·&nbsp; Anti-Detection &nbsp;·&nbsp; Max Cowony</p>
+  <p>24/7 Smart Farming · Real Data · Auto Team · Auto Lootbox</p>
 </header>
 
 <div class="status-row">
   <div class="pill"><div class="dot" id="dot"></div><span id="status-text">Loading…</span></div>
+  <div class="pill" id="team-pill"><div class="dot dot-off" id="team-dot"></div><span id="team-label">Team: checking…</span></div>
   <div class="pill"><div class="dot dot-online"></div><span>Anti-Detect ON</span></div>
 </div>
 
 <!-- Notices -->
-<div id="notice-err" class="notice notice-err">
-  <h3>Error</h3><p id="err-msg"></p>
-</div>
+<div id="notice-err" class="notice notice-err"><h3>Error</h3><p id="err-msg"></p></div>
 <div id="pause-banner" class="pause-banner">
-  <h3>⏸ Anti-Detection Break Active</h3>
-  <p id="pause-reason">Bot is taking a human-like break to avoid detection.</p>
+  <h3>⏸ Human Break Active</h3>
+  <p id="pause-reason">Anti-detect break running…</p>
 </div>
 
 <!-- Daily target -->
 <div class="wrap">
   <div class="card">
     <div class="target-header">
-      <span class="target-title">Daily Target Progress
-        <span style="color:#6e7681;font-size:.72rem;font-weight:400">&nbsp;(goal: 85,000 cowony/day)</span>
+      <span class="target-title">Daily Target
+        <span style="color:#6e7681;font-size:.7rem;font-weight:400"> — Real tracked cowony (goal: 85,000/day)</span>
       </span>
       <span class="target-pct" id="target-pct">0%</span>
     </div>
     <div class="prog-bg"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
     <div class="target-sub">
-      <span id="earned-label">0 cowony earned</span>
+      <span id="earned-label">0 cowony (real)</span>
       <span id="rate-label">Rate: 0 / day</span>
     </div>
   </div>
@@ -199,19 +171,19 @@
 <!-- Stat cards -->
 <div class="grid">
   <div class="card">
-    <div class="card-label">Commands Sent</div>
-    <div class="card-value blue" id="total">0</div>
-    <div class="card-sub">since start</div>
-  </div>
-  <div class="card">
-    <div class="card-label">Cowony Earned</div>
-    <div class="card-value green" id="earned">0</div>
-    <div class="card-sub">estimated total</div>
+    <div class="card-label">Real Cowony</div>
+    <div class="card-value green" id="real-cowony">0</div>
+    <div class="card-sub">tracked from OWO</div>
   </div>
   <div class="card">
     <div class="card-label">Daily Rate</div>
     <div class="card-value gold" id="daily">0</div>
     <div class="card-sub">cowony / day</div>
+  </div>
+  <div class="card">
+    <div class="card-label">Commands Sent</div>
+    <div class="card-value blue" id="total">0</div>
+    <div class="card-sub">total this session</div>
   </div>
   <div class="card">
     <div class="card-label">Uptime</div>
@@ -220,159 +192,214 @@
   </div>
 </div>
 
-<!-- Info bar -->
+<!-- Smart features -->
+<div class="smart-grid">
+  <div class="smart-card">
+    <div class="smart-label">Lootboxes</div>
+    <div class="smart-val" id="lootboxes">0</div>
+    <div class="smart-sub">auto-opened</div>
+  </div>
+  <div class="smart-card">
+    <div class="smart-label">Animals</div>
+    <div class="smart-val" id="animals">0</div>
+    <div class="smart-sub">caught this session</div>
+  </div>
+  <div class="smart-card">
+    <div class="smart-label">Quests</div>
+    <div class="smart-val" id="quests">0</div>
+    <div class="smart-sub">completed</div>
+  </div>
+  <div class="smart-card">
+    <div class="smart-label">Session Start</div>
+    <div class="smart-val" style="font-size:.9rem;color:#8b949e" id="started">—</div>
+    <div class="smart-sub">started at</div>
+  </div>
+</div>
+
+<!-- Info + anti-detect -->
 <div class="wrap">
   <div class="info-card">
     <div class="info-item"><span class="info-label">Account:</span><span class="info-val" id="account">—</span></div>
     <div class="info-item"><span class="info-label">Channel:</span><span class="info-val" id="channel">—</span></div>
-    <div class="info-item"><span class="info-label">Last cmd:</span><span class="info-val" id="last-cmd">—</span></div>
-    <div class="info-item"><span class="info-label">Started:</span><span class="info-val" id="started">—</span></div>
+    <div class="info-item"><span class="info-label">Last sent:</span><span class="info-val" id="last-cmd">—</span></div>
     <button class="logout-btn" onclick="doLogout()">Logout</button>
     <div class="ad-row">
       <span class="ad-badge">✓ Typing Simulation</span>
-      <span class="ad-badge">✓ Random Jitter ±20%</span>
+      <span class="ad-badge">✓ ±20% Jitter</span>
       <span class="ad-badge">✓ Human Breaks</span>
       <span class="ad-badge">✓ 4% Skip Rate</span>
       <span class="ad-badge">✓ Rate-Limit Safe</span>
-      <span class="ad-badge">✓ Send Lock</span>
+      <span class="ad-badge team-badge" id="team-feat">⟳ Auto Team Setup</span>
+      <span class="ad-badge team-badge">✓ Auto Lootbox Open</span>
+      <span class="ad-badge team-badge">✓ Auto Crate Open</span>
     </div>
   </div>
 </div>
 
-<!-- Live command breakdown -->
-<div class="section" style="margin-top:14px">
+<!-- Two column: activity log + recent cowony events -->
+<div class="two-col">
+  <div>
+    <div class="section-title" style="margin-bottom:8px">Live Activity Log</div>
+    <div class="card" style="padding:0 16px; max-height:280px; overflow-y:auto">
+      <div id="activity-log"><div style="color:#484f58;text-align:center;padding:20px;font-size:.8rem">Waiting for bot…</div></div>
+    </div>
+  </div>
+  <div>
+    <div class="section-title" style="margin-bottom:8px">Real Cowony Events</div>
+    <div class="card" style="padding:0 16px; max-height:280px; overflow-y:auto">
+      <div id="cowony-events"><div style="color:#484f58;text-align:center;padding:20px;font-size:.8rem">No events yet…</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Command breakdown -->
+<div class="section">
   <div class="section-title">Live Command Breakdown</div>
   <div class="card" style="padding:0;overflow:hidden">
     <table>
-      <thead><tr><th>Command</th><th>Type</th><th>Sent</th><th>Cooldown</th><th style="width:120px">Activity</th></tr></thead>
+      <thead><tr><th>Command</th><th>Type</th><th>Sent</th><th>Cooldown</th><th style="width:110px">Activity</th></tr></thead>
       <tbody id="cmd-body"><tr><td colspan="5" style="color:#484f58;text-align:center;padding:20px">Waiting for bot…</td></tr></tbody>
     </table>
   </div>
 </div>
 
-<!-- All commands reference -->
-<div class="section">
-  <div class="section-title">All 14 Farming Commands</div>
-  <div class="card" style="padding:0;overflow:hidden">
-    <table>
-      <thead><tr><th>Command</th><th>Type</th><th>Cooldown</th><th>Est. Earn</th></tr></thead>
-      <tbody>
-        <tr><td style="font-family:monospace;font-size:.78rem">owo battle</td><td><span class="badge b-grind">GRIND</span></td><td style="color:#6e7681">1 min</td><td class="green">+55 / use</td></tr>
-        <tr><td style="font-family:monospace;font-size:.78rem">owo pray</td><td><span class="badge b-grind">GRIND</span></td><td style="color:#6e7681">5 min</td><td class="green">+65 / use</td></tr>
-        <tr><td style="font-family:monospace;font-size:.78rem">owo curse</td><td><span class="badge b-grind">GRIND</span></td><td style="color:#6e7681">5 min</td><td class="green">+65 / use</td></tr>
-        <tr><td style="font-family:monospace;font-size:.78rem">owo work</td><td><span class="badge b-grind">GRIND</span></td><td style="color:#6e7681">15 min</td><td class="green">+180 / use</td></tr>
-        <tr><td style="font-family:monospace;font-size:.78rem">owo crime</td><td><span class="badge b-grind">GRIND</span></td><td style="color:#6e7681">30 min</td><td class="green">+220 / use</td></tr>
-        <tr><td style="font-family:monospace;font-size:.78rem">owo hunt</td><td><span class="badge b-grind">GRIND</span></td><td style="color:#6e7681">30 min</td><td class="green">+130 / use</td></tr>
-        <tr><td style="font-family:monospace;font-size:.78rem">owo fish</td><td><span class="badge b-grind">GRIND</span></td><td style="color:#6e7681">30 min</td><td class="green">+130 / use</td></tr>
-        <tr><td style="font-family:monospace;font-size:.78rem">owo slots 500</td><td><span class="badge b-gamble">GAMBLE</span></td><td style="color:#6e7681">10 min</td><td class="green">+220 avg</td></tr>
-        <tr><td style="font-family:monospace;font-size:.78rem">owo coinflip 500</td><td><span class="badge b-gamble">GAMBLE</span></td><td style="color:#6e7681">5 min</td><td class="green">+220 avg</td></tr>
-        <tr><td style="font-family:monospace;font-size:.78rem">owo sell all</td><td><span class="badge b-sell">SELL</span></td><td style="color:#6e7681">2 hrs</td><td class="green">+600 avg</td></tr>
-        <tr><td style="font-family:monospace;font-size:.78rem">owo sell gems</td><td><span class="badge b-sell">SELL</span></td><td style="color:#6e7681">2 hrs</td><td class="green">+300 avg</td></tr>
-        <tr><td style="font-family:monospace;font-size:.78rem">owo checklist</td><td><span class="badge b-bonus">BONUS</span></td><td style="color:#6e7681">1 hr</td><td class="green">+50 avg</td></tr>
-        <tr><td style="font-family:monospace;font-size:.78rem">owo daily</td><td><span class="badge b-bonus">BONUS</span></td><td style="color:#6e7681">12 hrs</td><td class="green">+6,000</td></tr>
-        <tr><td style="font-family:monospace;font-size:.78rem">owo weekly</td><td><span class="badge b-bonus">BONUS</span></td><td style="color:#6e7681">7 days</td><td class="green">+28,000</td></tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<footer>Auto-refreshes every 3s &nbsp;·&nbsp; OWO Auto-Farmer</footer>
+<footer>Auto-refreshes every 3s · Real data from OWO responses · Anti-Detection Active</footer>
 
 <script>
 const CMD_META = {
-  Battle:{cls:'b-grind',   cd:'1 min'},  Pray:{cls:'b-grind',   cd:'5 min'},
-  Curse: {cls:'b-grind',   cd:'5 min'},  Work:{cls:'b-grind',   cd:'15 min'},
-  Crime: {cls:'b-grind',   cd:'30 min'}, Hunt:{cls:'b-grind',   cd:'30 min'},
-  Fish:  {cls:'b-grind',   cd:'30 min'}, Slots:{cls:'b-gamble', cd:'10 min'},
-  Coinflip:{cls:'b-gamble',cd:'5 min'},  Sell:{cls:'b-sell',    cd:'2 hrs'},
-  SellGems:{cls:'b-sell',  cd:'2 hrs'},  Checklist:{cls:'b-bonus',cd:'1 hr'},
-  Daily:{cls:'b-bonus',    cd:'12 hrs'}, Weekly:{cls:'b-bonus', cd:'7 days'},
+  Battle:{cls:'b-grind',cd:'1 min'}, Pray:{cls:'b-grind',cd:'5 min'},
+  Curse:{cls:'b-grind',cd:'5 min'}, Work:{cls:'b-grind',cd:'15 min'},
+  Crime:{cls:'b-grind',cd:'30 min'}, Hunt:{cls:'b-grind',cd:'30 min'},
+  Fish:{cls:'b-grind',cd:'30 min'}, Slots:{cls:'b-gamble',cd:'10 min'},
+  Coinflip:{cls:'b-gamble',cd:'5 min'}, Sell:{cls:'b-sell',cd:'2 hrs'},
+  Checklist:{cls:'b-bonus',cd:'1 hr'}, Daily:{cls:'b-bonus',cd:'12 hrs'},
+  Weekly:{cls:'b-bonus',cd:'7 days'},
 };
-const CAT_LABEL = {'b-grind':'GRIND','b-gamble':'GAMBLE','b-bonus':'BONUS','b-sell':'SELL'};
+const CAT = {'b-grind':'GRIND','b-gamble':'GAMBLE','b-bonus':'BONUS','b-sell':'SELL'};
 const STATUS = {
-  online:       {cls:'dot-online',  lbl:'Online — Farming Active'},
-  connecting:   {cls:'dot-pending', lbl:'Connecting to Discord…'},
-  reconnecting: {cls:'dot-pending', lbl:'Reconnecting…'},
-  waiting:      {cls:'dot-pending', lbl:'Waiting for login…'},
-  no_channel:   {cls:'dot-pending', lbl:'Channel ID needed'},
-  error:        {cls:'dot-error',   lbl:'Error — check below'},
+  online:       {cls:'dot-online', lbl:'Online — Farming Active'},
+  connecting:   {cls:'dot-pending',lbl:'Connecting…'},
+  reconnecting: {cls:'dot-pending',lbl:'Reconnecting…'},
+  waiting:      {cls:'dot-pending',lbl:'Waiting for login…'},
+  no_channel:   {cls:'dot-pending',lbl:'Channel ID needed'},
+  error:        {cls:'dot-error',  lbl:'Error'},
 };
-
 const fmt  = n => Number(n||0).toLocaleString();
 const fmtT = s => {
   if(!s) return '—';
-  const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
+  const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sec=s%60;
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
 };
 
-let channelModalShown = false;
+let chModalShown = false;
 
 async function refresh() {
-  let d;
-  try { d = await (await fetch('/api/stats')).json(); }
-  catch { return; }
+  let d; try { d=await(await fetch('/api/stats')).json(); } catch{return;}
 
-  // Status pill
-  const {cls, lbl} = STATUS[d.status] || {cls:'dot-off', lbl:d.status};
-  document.getElementById('dot').className = 'dot ' + cls;
-  document.getElementById('status-text').textContent = lbl;
+  // Status
+  const {cls,lbl} = STATUS[d.status]||{cls:'dot-off',lbl:d.status};
+  document.getElementById('dot').className='dot '+cls;
+  document.getElementById('status-text').textContent=lbl;
 
-  // Show channel modal if needed
-  if (!d.channel_id_set && !channelModalShown && d.status !== 'waiting') {
-    channelModalShown = true;
-    document.getElementById('ch-modal').style.display = 'flex';
-    setTimeout(() => document.getElementById('ch-input').focus(), 100);
+  // Team status
+  const tdot = document.getElementById('team-dot');
+  const tlbl = document.getElementById('team-label');
+  const tfeat = document.getElementById('team-feat');
+  if(d.team_ready) {
+    tdot.className='dot dot-online';
+    tlbl.textContent='Team: Ready';
+    tfeat.textContent='✓ Battle Team Active';
+  } else {
+    tdot.className='dot dot-pending';
+    tlbl.textContent='Team: Setting up…';
+    tfeat.textContent='⟳ Auto Team Setup';
   }
 
-  // Error notice
-  const errEl = document.getElementById('notice-err');
-  errEl.style.display = (d.status==='error' && d.last_error) ? 'block' : 'none';
-  if(d.last_error) document.getElementById('err-msg').textContent = d.last_error;
+  // Channel modal
+  if(!d.channel_id_set && !chModalShown && d.status!=='waiting') {
+    chModalShown=true;
+    document.getElementById('ch-modal').style.display='flex';
+    setTimeout(()=>document.getElementById('ch-input').focus(),100);
+  }
 
-  // Pause banner
-  const pb = document.getElementById('pause-banner');
-  pb.style.display = d.paused ? 'block' : 'none';
-  if(d.paused) document.getElementById('pause-reason').textContent = d.pause_reason||'Human-like break…';
+  // Error
+  const errEl=document.getElementById('notice-err');
+  errEl.style.display=(d.status==='error'&&d.last_error)?'block':'none';
+  if(d.last_error) document.getElementById('err-msg').textContent=d.last_error;
 
-  // Target bar
-  const target = d.daily_target || 85000;
-  const earned = d.cowony_earned || 0;
-  const daily  = d.daily_rate   || 0;
-  const pct    = Math.min(Math.round(earned/target*100), 100);
-  document.getElementById('target-pct').textContent   = pct+'%';
-  document.getElementById('prog-fill').style.width    = pct+'%';
-  document.getElementById('earned-label').textContent = fmt(earned)+' cowony earned';
-  document.getElementById('rate-label').textContent   = 'Rate: '+fmt(daily)+' / day';
+  // Pause
+  const pb=document.getElementById('pause-banner');
+  pb.style.display=d.paused?'block':'none';
+  if(d.paused) document.getElementById('pause-reason').textContent=d.pause_reason||'Break…';
+
+  // Target bar (real cowony)
+  const target=d.daily_target||85000;
+  const real=d.real_cowony||0;
+  const daily=d.daily_rate||0;
+  const pct=Math.min(Math.round(real/target*100),100);
+  document.getElementById('target-pct').textContent=pct+'%';
+  document.getElementById('prog-fill').style.width=pct+'%';
+  document.getElementById('earned-label').textContent=fmt(real)+' cowony (real)';
+  document.getElementById('rate-label').textContent='Rate: '+fmt(daily)+' / day';
 
   // Stat cards
-  document.getElementById('total').textContent  = fmt(d.total_commands);
-  document.getElementById('earned').textContent = fmt(earned);
-  document.getElementById('daily').textContent  = fmt(daily);
-  document.getElementById('uptime').textContent = fmtT(d.uptime_seconds);
+  document.getElementById('real-cowony').textContent=fmt(real);
+  document.getElementById('daily').textContent=fmt(daily);
+  document.getElementById('total').textContent=fmt(d.total_commands);
+  document.getElementById('uptime').textContent=fmtT(d.uptime_seconds);
+
+  // Smart stats
+  document.getElementById('lootboxes').textContent=fmt(d.lootboxes_opened);
+  document.getElementById('animals').textContent=fmt(d.animals_caught);
+  document.getElementById('quests').textContent=fmt(d.quests_completed);
+  document.getElementById('started').textContent=d.start_time||(d.start_time&&d.start_time.slice(11,16))||'—';
 
   // Info bar
-  document.getElementById('account').textContent  = d.logged_in_as||'—';
-  document.getElementById('channel').textContent  = d.channel_name ? '#'+d.channel_name : (d.channel_id||'—');
-  document.getElementById('last-cmd').textContent = d.last_command_time||'—';
-  document.getElementById('started').textContent  = d.start_time||'—';
+  document.getElementById('account').textContent=d.logged_in_as||'—';
+  document.getElementById('channel').textContent=d.channel_name?'#'+d.channel_name:(d.channel_id||'—');
+  document.getElementById('last-cmd').textContent=d.last_command_time||'—';
+
+  // Activity log
+  const acts = d.activity_log||[];
+  const alog = document.getElementById('activity-log');
+  if(!acts.length) {
+    alog.innerHTML='<div style="color:#484f58;text-align:center;padding:20px;font-size:.8rem">Waiting for first action…</div>';
+  } else {
+    alog.innerHTML = acts.map(a=>`
+      <div class="log-item">
+        <span class="log-time">${a.time}</span>
+        <span class="log-${a.kind||'info'}">${a.msg}</span>
+      </div>`).join('');
+  }
+
+  // Real cowony events
+  const evts = d.real_events||[];
+  const elog = document.getElementById('cowony-events');
+  if(!evts.length) {
+    elog.innerHTML='<div style="color:#484f58;text-align:center;padding:20px;font-size:.8rem">No cowony events yet…</div>';
+  } else {
+    elog.innerHTML = evts.map(e=>`
+      <div class="log-item">
+        <span class="log-time">${e.time}</span>
+        <span class="${e.kind==='earn'?'event-earn':'event-loss'}">${e.amount}</span>
+      </div>`).join('');
+  }
 
   // Command table
-  const stats  = d.command_stats||{};
-  const keys   = Object.keys(stats);
-  const maxVal = keys.length ? Math.max(...keys.map(k=>stats[k])) : 1;
-  const tbody  = document.getElementById('cmd-body');
+  const stats=d.command_stats||{};
+  const keys=Object.keys(stats);
+  const maxV=keys.length?Math.max(...keys.map(k=>stats[k])):1;
+  const tbody=document.getElementById('cmd-body');
   if(!keys.length) {
-    tbody.innerHTML = `<tr><td colspan="5" style="color:#484f58;text-align:center;padding:20px">${
-      d.status==='online' ? 'Sending first commands…' : 'Waiting for bot to connect…'
-    }</td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="5" style="color:#484f58;text-align:center;padding:20px">${d.status==='online'?'Sending first commands…':'Waiting for bot…'}</td></tr>`;
     return;
   }
-  tbody.innerHTML = keys.slice().sort((a,b)=>stats[b]-stats[a]).map(name=>{
+  tbody.innerHTML=keys.slice().sort((a,b)=>stats[b]-stats[a]).map(name=>{
     const m=CMD_META[name]||{cls:'b-grind',cd:'—'};
-    const p=Math.round(stats[name]/maxVal*100);
+    const p=Math.round(stats[name]/maxV*100);
     return `<tr>
-      <td style="font-family:monospace;font-size:.78rem;color:#e6edf3;font-weight:600">owo ${name.toLowerCase()}</td>
-      <td><span class="badge ${m.cls}">${CAT_LABEL[m.cls]||'CMD'}</span></td>
+      <td style="font-family:monospace;font-size:.77rem;color:#e6edf3;font-weight:600">owo ${name.toLowerCase()}</td>
+      <td><span class="badge ${m.cls}">${CAT[m.cls]||'CMD'}</span></td>
       <td style="color:#3fb950;font-weight:700">${fmt(stats[name])}</td>
       <td style="color:#6e7681">${m.cd}</td>
       <td><div class="bar-bg"><div class="bar-fill" style="width:${p}%"></div></div></td>
@@ -381,19 +408,14 @@ async function refresh() {
 }
 
 async function saveChannel() {
-  const val = document.getElementById('ch-input').value.trim();
-  const err = document.getElementById('ch-err');
-  if(!val) { err.textContent='Enter a channel ID'; err.style.display='block'; return; }
+  const val=document.getElementById('ch-input').value.trim();
+  const err=document.getElementById('ch-err');
+  if(!val){err.textContent='Enter a channel ID';err.style.display='block';return;}
   err.style.display='none';
-  const res  = await fetch('/api/set_channel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel_id:val})});
-  const data = await res.json();
-  if(data.success) {
-    document.getElementById('ch-modal').style.display='none';
-    channelModalShown = false;
-  } else {
-    err.textContent = data.error||'Failed';
-    err.style.display='block';
-  }
+  const res=await fetch('/api/set_channel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel_id:val})});
+  const data=await res.json();
+  if(data.success){document.getElementById('ch-modal').style.display='none';chModalShown=false;}
+  else{err.textContent=data.error||'Failed';err.style.display='block';}
 }
 
 async function doLogout() {
@@ -403,7 +425,7 @@ async function doLogout() {
 }
 
 refresh();
-setInterval(refresh, 3000);
+setInterval(refresh,3000);
 </script>
 </body>
 </html>
