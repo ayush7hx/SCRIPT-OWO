@@ -50,6 +50,9 @@ state = {
     "_team_creating":   False,
     "_team_add_ok":     False,
     "_equipping":       False,
+    "_weapon_step":     0,      # 0=idle,1=waiting weapon list,2=waiting slot choice
+    "_weapon_slot":     1,      # which team slot to equip to next (1-3)
+    "_weapon_channel":  None,   # channel ref for interactive replies
 }
 
 send_lock         = None
@@ -195,28 +198,46 @@ async def auto_create_team(channel):
     else:
         log_activity("No animals to add — hunt/fish first to catch some!", "warn")
 
-# ─── Auto-equip weapons to team animals ───────────────────────────────────────
+# ─── Auto-equip weapons (interactive OWO flow) ───────────────────────────────
 async def auto_equip_weapons(channel):
-    """Try owo weapon equip for each team animal."""
+    """
+    OWO weapon equip interactive flow:
+      1. Bot sends `owo weapon equip`
+      2. OWO shows numbered weapon list → bot replies "1"
+      3. OWO asks which team slot → bot replies "1", "2", or "3"
+      4. Repeat for each team slot (up to 3 times)
+    """
     if state["_equipping"]:
         return
-    animals = team_animal_names()
-    if not animals:
-        return
+    state["_equipping"]       = True
+    state["_weapon_channel"]  = channel
+    state["_weapon_slot"]     = 1  # start at slot 1
 
-    state["_equipping"] = True
-    log_activity("Equipping weapons to team...", "info")
-    equipped = 0
-    for animal in animals:
+    log_activity("Auto-equipping weapons to team...", "info")
+
+    # Run equip loop for each team slot
+    for slot in range(1, 4):
+        state["_weapon_step"] = 1           # step 1 = waiting for OWO weapon list
+        state["_weapon_slot"] = slot
         try:
-            await smart_send(channel, f"owo weapon equip {animal}")
-            await asyncio.sleep(random.uniform(3, 5))
-            equipped += 1
+            await smart_send(channel, "owo weapon equip")
         except Exception as e:
-            log_activity(f"Weapon equip err ({animal}): {e}", "warn")
-    state["_equipping"] = False
-    if equipped:
-        log_activity(f"Weapon equip attempted for {equipped} animals", "info")
+            log_activity(f"Weapon equip send err: {e}", "warn")
+            break
+        # Wait up to 20s for the full interaction to complete (steps 1→2→done)
+        for _ in range(20):
+            await asyncio.sleep(1)
+            if state["_weapon_step"] == 0:  # completed for this slot
+                break
+        if state["_weapon_step"] != 0:
+            # OWO didn't respond — no weapons in inventory, stop
+            state["_weapon_step"] = 0
+            log_activity("No weapons in inventory to equip", "info")
+            break
+        await asyncio.sleep(random.uniform(3, 6))  # pause between slots
+
+    state["_equipping"]      = False
+    state["_weapon_channel"] = None
 
 # ─── Auto open lootbox / crate ────────────────────────────────────────────────
 async def auto_open_lootbox(channel):
@@ -348,11 +369,44 @@ async def handle_owo_message(message, channel, client):
         if not state["_team_creating"]:
             client.loop.create_task(auto_create_team(channel))
 
-    # ── Weapon equipped ────────────────────────────────────────────────────────
+    # ── Weapon equip interactive flow ─────────────────────────────────────────
+    # Step 1: OWO shows numbered weapon list → reply "1" to pick first weapon
+    if state["_weapon_step"] == 1:
+        weapon_list = (
+            re.search(r'1\.\s*\*{0,2}.{1,40}\*{0,2}', full) or  # "1. SwordName"
+            "select" in low or "choose" in low or
+            ("1." in full and ("weapon" in low or "equip" in low or "inventory" in low))
+        )
+        if weapon_list:
+            state["_weapon_step"] = 2
+            ch = state.get("_weapon_channel")
+            if ch:
+                await asyncio.sleep(random.uniform(1.5, 3.0))
+                await ch.send("1")
+                log_activity("Weapon equip: picked weapon #1", "info")
+
+    # Step 2: OWO asks which team slot → reply with slot number
+    elif state["_weapon_step"] == 2:
+        slot_prompt = (
+            "which team member" in low or "which slot" in low or
+            "which animal" in low or "pick a slot" in low or
+            "team slot" in low or ("1." in full and "2." in full and "team" in low)
+        )
+        if slot_prompt:
+            slot = state.get("_weapon_slot", 1)
+            ch   = state.get("_weapon_channel")
+            if ch:
+                await asyncio.sleep(random.uniform(1.5, 3.0))
+                await ch.send(str(slot))
+                log_activity(f"Weapon equip: picked slot {slot}", "info")
+            state["_weapon_step"] = 0  # done for this slot
+
+    # ── Weapon equipped confirmation ────────────────────────────────────────────
     if "equipped" in low and ("weapon" in low or "sword" in low or "staff" in low
-                               or "bow" in low or "wand" in low):
+                               or "bow" in low or "wand" in low or "gun" in low):
         state["weapons_equipped"] += 1
-        log_activity("Weapon equipped on team animal!", "earn")
+        state["_weapon_step"] = 0   # ensure state resets on any equip confirm
+        log_activity("✅ Weapon equipped on team animal!", "earn")
 
     # ── Hunt result ───────────────────────────────────────────────────────────
     if "spent" in low and "caught" in low:
@@ -531,6 +585,7 @@ def run_bot():
                 "battles_lost": 0, "total_xp": 0, "team_animals": [],
                 "weapons_equipped": 0, "_cooldowns": {},
                 "_team_creating": False, "_team_add_ok": False, "_equipping": False,
+                "_weapon_step": 0, "_weapon_slot": 1, "_weapon_channel": None,
             })
 
             log_activity(f"Online as {client.user}", "info")
@@ -649,7 +704,8 @@ def stats():
         d["uptime_seconds"] = 0; d["daily_rate"] = 0; d["start_time"] = None
     d["last_command_time"] = (state["last_command_time"].strftime("%H:%M:%S")
                                if state["last_command_time"] else "—")
-    for k in ("token", "_cooldowns", "_team_creating", "_team_add_ok", "_equipping"):
+    for k in ("token", "_cooldowns", "_team_creating", "_team_add_ok", "_equipping",
+               "_weapon_step", "_weapon_slot", "_weapon_channel"):
         d.pop(k, None)
     return jsonify(d)
 
