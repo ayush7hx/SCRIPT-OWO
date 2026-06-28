@@ -6,6 +6,7 @@ import threading
 import time
 import re
 import requests
+import logging
 from datetime import datetime
 from flask import Flask, render_template, jsonify, request, session, redirect
 
@@ -16,6 +17,7 @@ OWO_BOT_ID     = 408785106942164992
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
+logging.getLogger("werkzeug").setLevel(logging.ERROR)
 
 # ─── State ────────────────────────────────────────────────────────────────────
 state = {
