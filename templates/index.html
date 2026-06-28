@@ -1,474 +1,401 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>OWO Auto-Farmer</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background:#0d1117; color:#e6edf3; font-family:'Segoe UI',system-ui,sans-serif; min-height:100vh; padding:18px 14px 48px; }
-
-    header { text-align:center; margin-bottom:18px; }
-    header h1 { font-size:1.7rem; font-weight:800; background:linear-gradient(135deg,#58a6ff 30%,#3fb950); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-    header p  { color:#6e7681; margin-top:3px; font-size:.78rem; }
-
-    .status-row { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px; margin-bottom:16px; }
-    .pill { display:flex; align-items:center; gap:7px; background:#161b22; border:1px solid #21262d; border-radius:999px; padding:5px 13px; font-size:.78rem; font-weight:600; }
-    .dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
-    .dot-online  { background:#3fb950; box-shadow:0 0 6px #3fb950; animation:blink 2s infinite; }
-    .dot-pending { background:#f0883e; box-shadow:0 0 6px #f0883e; animation:blink 1.2s infinite; }
-    .dot-error   { background:#f85149; }
-    .dot-off     { background:#484f58; }
-    @keyframes blink { 0%,100%{opacity:1}50%{opacity:.25} }
-
-    /* Channel modal */
-    .modal-bg { position:fixed; inset:0; background:#000000bb; display:flex; align-items:center; justify-content:center; z-index:100; padding:20px; }
-    .modal { background:#161b22; border:1px solid #30363d; border-radius:16px; padding:28px 26px; width:100%; max-width:400px; }
-    .modal h2 { font-size:1rem; margin-bottom:8px; }
-    .modal p  { color:#8b949e; font-size:.78rem; line-height:1.6; margin-bottom:16px; }
-    .modal input { width:100%; background:#0d1117; border:1px solid #30363d; border-radius:8px; padding:10px 12px; color:#e6edf3; font-size:.9rem; outline:none; }
-    .modal input:focus { border-color:#58a6ff; }
-    .modal-btn { width:100%; margin-top:11px; padding:11px; background:#238636; border:none; border-radius:8px; color:#fff; font-size:.9rem; font-weight:700; cursor:pointer; }
-    .modal-btn:hover { background:#2ea043; }
-    .modal-err { color:#f85149; font-size:.77rem; margin-top:6px; display:none; }
-
-    /* Layout helpers */
-    .wrap  { max-width:880px; margin:0 auto 12px; }
-    .grid  { display:grid; gap:11px; max-width:880px; margin:0 auto 12px; }
-    .g2    { grid-template-columns:1fr 1fr; }
-    .g3    { grid-template-columns:repeat(3,1fr); }
-    .g4    { grid-template-columns:repeat(4,1fr); }
-    @media(max-width:640px) { .g4{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr} }
-
-    /* Cards */
-    .card { background:#161b22; border:1px solid #21262d; border-radius:12px; padding:16px 18px; }
-    .label { font-size:.65rem; text-transform:uppercase; letter-spacing:1.1px; color:#6e7681; margin-bottom:4px; }
-    .val   { font-size:1.55rem; font-weight:800; font-variant-numeric:tabular-nums; }
-    .sub   { font-size:.7rem; color:#6e7681; margin-top:2px; }
-    .blue  { color:#58a6ff } .green { color:#3fb950 } .gold { color:#e3b341 }
-    .purple{ color:#bc8cff } .red   { color:#f85149 } .orange{ color:#f0883e }
-
-    /* Target bar */
-    .target-hdr { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px; }
-    .prog-bg    { background:#21262d; border-radius:999px; height:10px; overflow:hidden; margin-bottom:5px; }
-    .prog-fill  { height:100%; border-radius:999px; background:linear-gradient(90deg,#3fb950,#58a6ff); transition:width 1s ease; }
-    .target-sub { display:flex; justify-content:space-between; font-size:.71rem; color:#6e7681; }
-
-    /* Team panel */
-    .team-panel { display:flex; flex-wrap:wrap; gap:8px; align-items:flex-start; }
-    .animal-card { background:#0d1117; border:1px solid #21262d; border-radius:9px; padding:8px 12px; min-width:80px; text-align:center; }
-    .animal-emoji { font-size:1.3rem; }
-    .animal-level { font-size:.75rem; font-weight:700; color:#bc8cff; margin-top:2px; }
-    .animal-name  { font-size:.66rem; color:#6e7681; }
-    .no-team { color:#484f58; font-size:.8rem; padding:8px 0; }
-
-    /* Battle streak badge */
-    .streak-badge { display:inline-flex; align-items:center; gap:5px; background:#1a1200; border:1px solid #e3b34166; color:#e3b341; border-radius:8px; padding:6px 12px; font-size:.9rem; font-weight:800; }
-    .streak-fire { font-size:1.1rem; }
-
-    /* Info bar */
-    .info-card { background:#161b22; border:1px solid #21262d; border-radius:12px; padding:11px 16px; display:flex; flex-wrap:wrap; gap:12px; align-items:flex-start; }
-    .info-item { font-size:.77rem; }
-    .info-lbl  { color:#6e7681; margin-right:4px; }
-    .info-val  { color:#e6edf3; font-weight:600; }
-    .ad-row    { display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; width:100%; }
-    .badge     { font-size:.67rem; font-weight:600; padding:2px 8px; border-radius:999px; }
-    .bg-green  { background:#0f2d1a; color:#3fb950; border:1px solid #3fb95044; }
-    .bg-purple { background:#1a0e2d; color:#bc8cff; border:1px solid #bc8cff44; }
-    .logout-btn { background:none; border:1px solid #f8514966; color:#f85149; border-radius:6px; padding:4px 10px; font-size:.72rem; cursor:pointer; margin-left:auto; }
-    .logout-btn:hover { background:#2d1218; }
-
-    /* Notice */
-    .pause-banner { max-width:880px; margin:0 auto 12px; background:#1a1200; border:1px solid #e3b341; border-left:4px solid #e3b341; border-radius:10px; padding:10px 15px; display:none; }
-    .pause-banner h3 { color:#e3b341; font-size:.84rem; }
-    .pause-banner p  { color:#9ca3af; font-size:.77rem; margin-top:3px; }
-    .error-banner { max-width:880px; margin:0 auto 12px; background:#1a0d0d; border:1px solid #f85149; border-left:4px solid #f85149; border-radius:10px; padding:10px 15px; display:none; }
-    .error-banner h3 { color:#f85149; font-size:.84rem; }
-    .error-banner p  { color:#9ca3af; font-size:.77rem; margin-top:3px; }
-
-    /* Logs */
-    .section-title { font-size:.67rem; text-transform:uppercase; letter-spacing:1.2px; color:#6e7681; margin-bottom:7px; }
-    .log-scroll    { max-height:260px; overflow-y:auto; }
-    .log-item      { display:flex; align-items:flex-start; gap:8px; padding:6px 0; border-bottom:1px solid #1c2128; font-size:.78rem; }
-    .log-item:last-child { border-bottom:none; }
-    .log-time  { color:#484f58; font-size:.68rem; flex-shrink:0; font-family:monospace; padding-top:1px; }
-    .log-earn  { color:#3fb950; font-weight:600; }
-    .log-loss  { color:#f85149; }
-    .log-warn  { color:#f0883e; }
-    .log-info  { color:#8b949e; }
-
-    /* Command table */
-    table { width:100%; border-collapse:collapse; }
-    th,td { padding:8px 12px; text-align:left; border-bottom:1px solid #1c2128; font-size:.78rem; }
-    th    { color:#6e7681; font-weight:600; font-size:.66rem; text-transform:uppercase; letter-spacing:.9px; }
-    tr:last-child td { border-bottom:none; }
-    tr:hover td { background:#1c2128; }
-    .bar-bg  { background:#21262d; border-radius:4px; height:5px; min-width:40px; }
-    .bar-fill{ height:100%; border-radius:4px; transition:width .7s; }
-    .b-hunt  { background:#3fb950; }
-    .b-battle{ background:#bc8cff; }
-    .b-fish  { background:#58a6ff; }
-    .b-gamble{ background:#f0883e; }
-    .b-bonus { background:#e3b341; }
-    .b-sell  { background:#484f58; }
-    .type-badge { display:inline-block; padding:2px 7px; border-radius:999px; font-size:.63rem; font-weight:700; }
-    .tb-grind  { background:#0f2d1a; color:#3fb950; border:1px solid #3fb95033; }
-    .tb-gamble { background:#1a0e2d; color:#bc8cff; border:1px solid #bc8cff33; }
-    .tb-bonus  { background:#2d1a0e; color:#e3b341; border:1px solid #e3b34133; }
-    .tb-sell   { background:#1c1c1c; color:#6e7681; border:1px solid #30363d; }
-
-    footer { text-align:center; color:#373e47; font-size:.68rem; margin-top:22px; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0d1117;color:#e6edf3;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;padding:16px 12px 48px}
+    header{text-align:center;margin-bottom:16px}
+    header h1{font-size:1.65rem;font-weight:800;background:linear-gradient(135deg,#58a6ff 30%,#3fb950);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    header p{color:#6e7681;margin-top:3px;font-size:.77rem}
+    .srow{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+    .pill{display:flex;align-items:center;gap:6px;background:#161b22;border:1px solid #21262d;border-radius:999px;padding:4px 12px;font-size:.77rem;font-weight:600}
+    .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+    .on{background:#3fb950;box-shadow:0 0 6px #3fb950;animation:blink 2s infinite}
+    .pend{background:#f0883e;box-shadow:0 0 6px #f0883e;animation:blink 1.2s infinite}
+    .err{background:#f85149}.off{background:#484f58}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+    /* modal */
+    .mbg{position:fixed;inset:0;background:#000b;display:flex;align-items:center;justify-content:center;z-index:100;padding:20px}
+    .modal{background:#161b22;border:1px solid #30363d;border-radius:16px;padding:26px 24px;width:100%;max-width:400px}
+    .modal h2{font-size:1rem;margin-bottom:7px}
+    .modal p{color:#8b949e;font-size:.77rem;line-height:1.6;margin-bottom:14px}
+    .modal input{width:100%;background:#0d1117;border:1px solid #30363d;border-radius:8px;padding:9px 12px;color:#e6edf3;font-size:.88rem;outline:none}
+    .modal input:focus{border-color:#58a6ff}
+    .modal-btn{width:100%;margin-top:10px;padding:10px;background:#238636;border:none;border-radius:8px;color:#fff;font-size:.88rem;font-weight:700;cursor:pointer}
+    .modal-btn:hover{background:#2ea043}
+    .merr{color:#f85149;font-size:.76rem;margin-top:5px;display:none}
+    /* layout */
+    .w{max-width:900px;margin:0 auto 11px}
+    .g{display:grid;gap:10px;max-width:900px;margin:0 auto 11px}
+    .g2{grid-template-columns:1fr 1fr}
+    .g3{grid-template-columns:repeat(3,1fr)}
+    .g4{grid-template-columns:repeat(4,1fr)}
+    .g5{grid-template-columns:repeat(5,1fr)}
+    @media(max-width:680px){.g5{grid-template-columns:repeat(3,1fr)}.g4{grid-template-columns:repeat(2,1fr)}.g3{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}}
+    .card{background:#161b22;border:1px solid #21262d;border-radius:12px;padding:14px 16px}
+    .lbl{font-size:.64rem;text-transform:uppercase;letter-spacing:1.1px;color:#6e7681;margin-bottom:4px}
+    .val{font-size:1.5rem;font-weight:800;font-variant-numeric:tabular-nums}
+    .sub{font-size:.69rem;color:#6e7681;margin-top:2px}
+    .blue{color:#58a6ff}.green{color:#3fb950}.gold{color:#e3b341}
+    .purple{color:#bc8cff}.red{color:#f85149}.orange{color:#f0883e}
+    /* target */
+    .thdr{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
+    .pbg{background:#21262d;border-radius:999px;height:9px;overflow:hidden;margin-bottom:5px}
+    .pfill{height:100%;border-radius:999px;background:linear-gradient(90deg,#3fb950,#58a6ff);transition:width 1s ease}
+    .tsub{display:flex;justify-content:space-between;font-size:.7rem;color:#6e7681}
+    /* team panel */
+    .team-wrap{display:flex;flex-wrap:wrap;gap:8px}
+    .ac{background:#0d1117;border:1px solid #21262d;border-radius:10px;padding:8px 12px;min-width:90px;text-align:center;position:relative}
+    .ac-emoji{font-size:1.25rem}
+    .ac-level{font-size:.74rem;font-weight:700;color:#bc8cff;margin-top:2px}
+    .ac-name{font-size:.64rem;color:#6e7681}
+    .wpn-badge{position:absolute;top:4px;right:5px;font-size:.6rem;background:#0f2d1a;color:#3fb950;border:1px solid #3fb95044;border-radius:4px;padding:1px 4px}
+    .no-wpn{position:absolute;top:4px;right:5px;font-size:.6rem;background:#2d0f0f;color:#f85149;border:1px solid #f8514944;border-radius:4px;padding:1px 4px}
+    /* banners */
+    .pbanner{max-width:900px;margin:0 auto 11px;background:#1a1200;border:1px solid #e3b341;border-left:4px solid #e3b341;border-radius:10px;padding:9px 14px;display:none}
+    .pbanner h3{color:#e3b341;font-size:.83rem}
+    .pbanner p{color:#9ca3af;font-size:.76rem;margin-top:2px}
+    .ebanner{max-width:900px;margin:0 auto 11px;background:#1a0d0d;border:1px solid #f85149;border-left:4px solid #f85149;border-radius:10px;padding:9px 14px;display:none}
+    .ebanner h3{color:#f85149;font-size:.83rem}
+    .ebanner p{color:#9ca3af;font-size:.76rem;margin-top:2px}
+    /* info bar */
+    .ibar{background:#161b22;border:1px solid #21262d;border-radius:12px;padding:10px 15px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start}
+    .ii{font-size:.76rem}
+    .il{color:#6e7681;margin-right:3px}
+    .iv{color:#e6edf3;font-weight:600}
+    .adr{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;width:100%}
+    .badge{font-size:.66rem;font-weight:600;padding:2px 7px;border-radius:999px}
+    .bg{background:#0f2d1a;color:#3fb950;border:1px solid #3fb95044}
+    .bp{background:#1a0e2d;color:#bc8cff;border:1px solid #bc8cff44}
+    .lo{background:none;border:1px solid #f8514966;color:#f85149;border-radius:6px;padding:3px 9px;font-size:.71rem;cursor:pointer;margin-left:auto}
+    .lo:hover{background:#2d1218}
+    /* logs */
+    .stitle{font-size:.66rem;text-transform:uppercase;letter-spacing:1.2px;color:#6e7681;margin-bottom:7px}
+    .logscroll{max-height:240px;overflow-y:auto}
+    .li{display:flex;align-items:flex-start;gap:7px;padding:5px 0;border-bottom:1px solid #1c2128;font-size:.77rem}
+    .li:last-child{border-bottom:none}
+    .lt{color:#484f58;font-size:.67rem;flex-shrink:0;font-family:monospace;padding-top:1px}
+    .earn{color:#3fb950;font-weight:600}.loss{color:#f85149}.warn{color:#f0883e}.info{color:#8b949e}
+    /* table */
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:7px 11px;text-align:left;border-bottom:1px solid #1c2128;font-size:.77rem}
+    th{color:#6e7681;font-weight:600;font-size:.65rem;text-transform:uppercase;letter-spacing:.9px}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:#1c2128}
+    .bbar{background:#21262d;border-radius:4px;height:5px;min-width:40px}
+    .bfill{height:100%;border-radius:4px;transition:width .7s}
+    .tbg{background:#0f2d1a;color:#3fb950;border:1px solid #3fb95033}
+    .tbp{background:#1a0e2d;color:#bc8cff;border:1px solid #bc8cff33}
+    .tbb{background:#2d1a0e;color:#e3b341;border:1px solid #e3b34133}
+    .tbs{background:#1c1c1c;color:#6e7681;border:1px solid #30363d}
+    .tbadge{display:inline-block;padding:2px 7px;border-radius:999px;font-size:.63rem;font-weight:700}
+    footer{text-align:center;color:#373e47;font-size:.67rem;margin-top:20px}
   </style>
 </head>
 <body>
-
 <!-- Channel modal -->
-<div class="modal-bg" id="ch-modal" style="display:none">
+<div class="mbg" id="ch-modal" style="display:none">
   <div class="modal">
     <h2>Enter Channel ID</h2>
-    <p>Right-click the OWO farming channel in Discord → <strong>Copy Channel ID</strong><br>
-    <small style="color:#484f58">(Enable Developer Mode: Discord Settings → Advanced)</small></p>
-    <input type="text" id="ch-input" placeholder="e.g. 1234567890123456789"
+    <p>Right-click the OWO channel in Discord → <strong>Copy Channel ID</strong><br>
+    <small style="color:#484f58">(Discord Settings → Advanced → Enable Developer Mode)</small></p>
+    <input type="text" id="ch-in" placeholder="e.g. 1234567890123456789"
            oninput="this.value=this.value.replace(/\D/g,'')"
-           onkeydown="if(event.key==='Enter')saveChannel()" />
-    <div class="modal-err" id="ch-err"></div>
-    <button class="modal-btn" onclick="saveChannel()">Start Farming</button>
+           onkeydown="if(event.key==='Enter')saveChannel()"/>
+    <div class="merr" id="ch-err"></div>
+    <button class="modal-btn" onclick="saveChannel()">Start Farming ▶</button>
   </div>
 </div>
 
 <header>
   <h1>OWO Auto-Farmer</h1>
-  <p>24/7 Hunt + Battle XP Grind · Real Cowony · Auto Team · Anti-Detect</p>
+  <p>24/7 Hunt · Battle · Weapons · Lootbox · Anti-Detect · Real Tracking</p>
 </header>
 
-<div class="status-row">
-  <div class="pill"><div class="dot" id="dot"></div><span id="status-text">Loading…</span></div>
-  <div class="pill"><div class="dot" id="team-dot"></div><span id="team-label">Team: —</span></div>
-  <div class="pill blue"><span id="streak-pill">🔥 Streak: 0</span></div>
-  <div class="pill"><div class="dot dot-online"></div>Anti-Detect ON</div>
+<div class="srow">
+  <div class="pill"><div class="dot" id="dot"></div><span id="stext">Loading…</span></div>
+  <div class="pill"><div class="dot" id="tdot"></div><span id="tlabel">Team: —</span></div>
+  <div class="pill gold"><span>🔥</span><span id="streak-pill">Streak: 0</span></div>
+  <div class="pill blue"><span>⚔️</span><span id="wpn-pill">Weapons: 0</span></div>
+  <div class="pill"><div class="dot on"></div>Anti-Detect ON</div>
 </div>
 
-<!-- Banners -->
-<div class="pause-banner" id="pause-banner">
-  <h3>⏸ Human Break Active</h3>
-  <p id="pause-reason">Break running…</p>
-</div>
-<div class="error-banner" id="error-banner">
-  <h3>⚠ Error</h3>
-  <p id="error-msg"></p>
-</div>
+<div class="pbanner" id="pb"><h3>⏸ Human Break</h3><p id="preason"></p></div>
+<div class="ebanner" id="eb"><h3>⚠ Error</h3><p id="emsg"></p></div>
 
 <!-- Daily target -->
-<div class="wrap">
+<div class="w">
   <div class="card">
-    <div class="target-hdr">
-      <span style="font-size:.84rem;font-weight:600">Daily Target
-        <span style="color:#6e7681;font-size:.69rem;font-weight:400"> — Real tracked cowony</span>
+    <div class="thdr">
+      <span style="font-size:.83rem;font-weight:600">Daily Target
+        <span style="color:#6e7681;font-size:.68rem;font-weight:400"> — Real cowony from OWO</span>
       </span>
-      <span style="font-size:1.4rem;font-weight:800;color:#e3b341" id="target-pct">0%</span>
+      <span style="font-size:1.35rem;font-weight:800;color:#e3b341" id="tpct">0%</span>
     </div>
-    <div class="prog-bg"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
-    <div class="target-sub">
-      <span id="earned-label">0 cowony</span>
-      <span id="rate-label">0 / day · Target: 85,000</span>
-    </div>
+    <div class="pbg"><div class="pfill" id="pfill" style="width:0%"></div></div>
+    <div class="tsub"><span id="elabel">0 cowony</span><span id="rlabel">0/day · Goal: 85,000</span></div>
   </div>
 </div>
 
 <!-- Main stats -->
-<div class="grid g4">
-  <div class="card"><div class="label">Real Cowony</div><div class="val green" id="real-cowony">0</div><div class="sub">from OWO responses</div></div>
-  <div class="card"><div class="label">Daily Rate</div><div class="val gold" id="daily-rate">0</div><div class="sub">cowony / day</div></div>
-  <div class="card"><div class="label">Total XP</div><div class="val purple" id="total-xp">0</div><div class="sub">hunt + battle XP</div></div>
-  <div class="card"><div class="label">Uptime</div><div class="val blue" id="uptime">—</div><div class="sub">hh:mm:ss</div></div>
+<div class="g g5">
+  <div class="card"><div class="lbl">Real Cowony</div><div class="val green" id="s-cowony">0</div><div class="sub">tracked from OWO</div></div>
+  <div class="card"><div class="lbl">Daily Rate</div><div class="val gold" id="s-rate">0</div><div class="sub">cowony/day</div></div>
+  <div class="card"><div class="lbl">Total XP</div><div class="val purple" id="s-xp">0</div><div class="sub">hunt+battle</div></div>
+  <div class="card"><div class="lbl">Battles Won</div><div class="val green" id="s-won">0</div><div class="sub" id="s-lost-sub">0 lost</div></div>
+  <div class="card"><div class="lbl">Uptime</div><div class="val blue" id="s-uptime">—</div><div class="sub">hh:mm:ss</div></div>
 </div>
 
-<!-- Battle + hunt stats row -->
-<div class="grid g4">
+<!-- Battle + smart stats -->
+<div class="g g4">
   <div class="card">
-    <div class="label">Battle Streak</div>
-    <div style="margin-top:4px">
-      <span class="streak-badge"><span class="streak-fire">🔥</span><span id="streak-val">0</span></span>
+    <div class="lbl">Battle Streak</div>
+    <div style="margin-top:4px;display:flex;align-items:center;gap:8px">
+      <span style="font-size:1.4rem;font-weight:800;color:#e3b341" id="s-streak">0</span>
+      <span style="font-size:1.1rem">🔥</span>
     </div>
-    <div class="sub" style="margin-top:5px">win streak</div>
+    <div class="sub">win streak</div>
   </div>
-  <div class="card"><div class="label">Battles Won</div><div class="val purple" id="battles-won">0</div><div class="sub">this session</div></div>
-  <div class="card"><div class="label">Animals Caught</div><div class="val green" id="animals-caught">0</div><div class="sub">hunt + fish</div></div>
-  <div class="card"><div class="label">Lootboxes</div><div class="val gold" id="lootboxes">0</div><div class="sub">auto-opened</div></div>
+  <div class="card"><div class="lbl">Weapons Equipped</div><div class="val" id="s-wpn" style="color:#58a6ff">0</div><div class="sub">auto-equipped</div></div>
+  <div class="card"><div class="lbl">Animals Caught</div><div class="val green" id="s-animals">0</div><div class="sub">hunt+fish</div></div>
+  <div class="card"><div class="lbl">Lootboxes</div><div class="val gold" id="s-loot">0</div><div class="sub">auto-opened</div></div>
 </div>
 
-<!-- Team panel -->
-<div class="wrap">
+<!-- Battle team panel -->
+<div class="w">
   <div class="card">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px">
       <div>
-        <div class="label">Battle Team</div>
-        <div style="font-size:.82rem;color:#6e7681;margin-top:1px">Like Diva's L.30 mythic team — auto-created from your animals</div>
+        <div class="lbl">Battle Team</div>
+        <div style="font-size:.8rem;color:#6e7681;margin-top:1px">Auto-created · Auto weapon equip after crate/lootbox · Every 3h periodic equip</div>
       </div>
-      <div id="team-status-badge" style="font-size:.75rem;font-weight:700;padding:4px 11px;border-radius:999px;background:#1a0e2d;color:#bc8cff;border:1px solid #bc8cff44">⟳ Setting up…</div>
+      <div id="team-badge" style="font-size:.74rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#1a0e2d;color:#bc8cff;border:1px solid #bc8cff44">⟳ Setting up…</div>
     </div>
-    <div class="team-panel" id="team-panel">
-      <div class="no-team">Checking team status… (bot will auto-create if needed)</div>
+    <div class="team-wrap" id="team-panel">
+      <div style="color:#484f58;font-size:.8rem;padding:6px 0">Bot is auto-creating team from your animals…</div>
     </div>
   </div>
 </div>
 
 <!-- Info bar -->
-<div class="wrap">
-  <div class="info-card">
-    <div class="info-item"><span class="info-lbl">Account:</span><span class="info-val" id="account">—</span></div>
-    <div class="info-item"><span class="info-lbl">Channel:</span><span class="info-val" id="channel">—</span></div>
-    <div class="info-item"><span class="info-lbl">Commands:</span><span class="info-val" id="total-cmds">0</span></div>
-    <div class="info-item"><span class="info-lbl">Last sent:</span><span class="info-val" id="last-cmd">—</span></div>
-    <button class="logout-btn" onclick="doLogout()">Logout</button>
-    <div class="ad-row">
-      <span class="badge bg-green">✓ Typing Sim</span>
-      <span class="badge bg-green">✓ ±20% Jitter</span>
-      <span class="badge bg-green">✓ Human Breaks</span>
-      <span class="badge bg-green">✓ 4% Skip Rate</span>
-      <span class="badge bg-green">✓ Rate-Limit Safe</span>
-      <span class="badge bg-purple" id="team-feat-badge">⟳ Auto Team Create</span>
-      <span class="badge bg-purple">✓ Auto Lootbox Open</span>
-      <span class="badge bg-purple">✓ Auto Crate Open</span>
-      <span class="badge bg-purple">✓ XP Tracking</span>
+<div class="w">
+  <div class="ibar">
+    <div class="ii"><span class="il">Account:</span><span class="iv" id="i-acct">—</span></div>
+    <div class="ii"><span class="il">Channel:</span><span class="iv" id="i-chan">—</span></div>
+    <div class="ii"><span class="il">Commands:</span><span class="iv" id="i-cmds">0</span></div>
+    <div class="ii"><span class="il">Last sent:</span><span class="iv" id="i-last">—</span></div>
+    <button class="lo" onclick="doLogout()">Logout</button>
+    <div class="adr">
+      <span class="badge bg">✓ Typing Sim</span>
+      <span class="badge bg">✓ ±20% Jitter</span>
+      <span class="badge bg">✓ Human Breaks</span>
+      <span class="badge bg">✓ 5s Min Gap</span>
+      <span class="badge bg">✓ Rate-Limit Aware</span>
+      <span class="badge bp" id="b-team">⟳ Auto Team</span>
+      <span class="badge bp">✓ Auto Weapon Equip</span>
+      <span class="badge bp">✓ Auto Lootbox/Crate</span>
+      <span class="badge bp">✓ Variable Gambling</span>
+      <span class="badge bp">✓ Real Cowony Track</span>
     </div>
   </div>
 </div>
 
-<!-- Activity + Cowony Events -->
-<div class="grid g2">
+<!-- Logs -->
+<div class="g g2">
   <div>
-    <div class="section-title">Live Activity Log</div>
-    <div class="card" style="padding:0 16px">
-      <div class="log-scroll" id="activity-log">
-        <div style="color:#484f58;text-align:center;padding:22px;font-size:.8rem">Waiting for bot…</div>
-      </div>
+    <div class="stitle">Live Activity Log</div>
+    <div class="card" style="padding:0 14px">
+      <div class="logscroll" id="alog"><div style="color:#484f58;text-align:center;padding:20px;font-size:.8rem">Waiting…</div></div>
     </div>
   </div>
   <div>
-    <div class="section-title">Real Cowony Events</div>
-    <div class="card" style="padding:0 16px">
-      <div class="log-scroll" id="cowony-events">
-        <div style="color:#484f58;text-align:center;padding:22px;font-size:.8rem">No events yet…</div>
-      </div>
+    <div class="stitle">Real Cowony Events</div>
+    <div class="card" style="padding:0 14px">
+      <div class="logscroll" id="clog"><div style="color:#484f58;text-align:center;padding:20px;font-size:.8rem">No events yet…</div></div>
     </div>
   </div>
 </div>
 
 <!-- Command table -->
-<div class="wrap">
-  <div class="section-title">Command Breakdown</div>
+<div class="w">
+  <div class="stitle">Command Breakdown</div>
   <div class="card" style="padding:0;overflow:hidden">
     <table>
-      <thead><tr><th>Command</th><th>Type</th><th>Sent</th><th>Cooldown</th><th style="width:100px">Activity</th></tr></thead>
-      <tbody id="cmd-body">
-        <tr><td colspan="5" style="color:#484f58;text-align:center;padding:22px">Waiting for bot…</td></tr>
-      </tbody>
+      <thead><tr><th>Command</th><th>Type</th><th>Sent</th><th>Cooldown</th><th style="width:90px">Activity</th></tr></thead>
+      <tbody id="ctbody"><tr><td colspan="5" style="color:#484f58;text-align:center;padding:20px">Waiting for bot…</td></tr></tbody>
     </table>
   </div>
 </div>
 
-<footer>Auto-refresh every 3s · Real data from OWO responses · Anti-Detection Active</footer>
+<footer>Auto-refresh 3s · Real data from OWO · Anti-detect active · Weapons auto-equipped</footer>
 
 <script>
-const CMD_META = {
-  Hunt:     {tb:'tb-grind',  bar:'b-hunt',   cd:'~1 min'},
-  Battle:   {tb:'tb-grind',  bar:'b-battle', cd:'~1 min'},
-  Fish:     {tb:'tb-grind',  bar:'b-fish',   cd:'~1 min'},
-  Pray:     {tb:'tb-grind',  bar:'b-hunt',   cd:'5 min'},
-  Curse:    {tb:'tb-grind',  bar:'b-hunt',   cd:'5 min'},
-  Work:     {tb:'tb-grind',  bar:'b-hunt',   cd:'15 min'},
-  Crime:    {tb:'tb-grind',  bar:'b-hunt',   cd:'30 min'},
-  Slots:    {tb:'tb-gamble', bar:'b-gamble', cd:'10 min'},
-  Coinflip: {tb:'tb-gamble', bar:'b-gamble', cd:'5 min'},
-  Sell:     {tb:'tb-sell',   bar:'b-sell',   cd:'2 hrs'},
-  Checklist:{tb:'tb-bonus',  bar:'b-bonus',  cd:'1 hr'},
-  Daily:    {tb:'tb-bonus',  bar:'b-bonus',  cd:'12 hrs'},
-  Weekly:   {tb:'tb-bonus',  bar:'b-bonus',  cd:'7 days'},
+const META = {
+  Hunt:     {t:'tbg',cd:'~1 min',c:'#3fb950'},
+  Battle:   {t:'tbp',cd:'~1 min',c:'#bc8cff'},
+  Fish:     {t:'tbg',cd:'~1 min',c:'#58a6ff'},
+  Pray:     {t:'tbg',cd:'5 min', c:'#3fb950'},
+  Curse:    {t:'tbg',cd:'5 min', c:'#3fb950'},
+  Work:     {t:'tbg',cd:'15 min',c:'#3fb950'},
+  Crime:    {t:'tbg',cd:'30 min',c:'#3fb950'},
+  Lootbox:  {t:'tbb',cd:'~4 hrs',c:'#e3b341'},
+  Slots:    {t:'tbp',cd:'10 min',c:'#bc8cff'},
+  Coinflip: {t:'tbp',cd:'5 min', c:'#bc8cff'},
+  Sell:     {t:'tbs',cd:'2 hrs', c:'#6e7681'},
+  Daily:    {t:'tbb',cd:'12 hrs',c:'#e3b341'},
+  Weekly:   {t:'tbb',cd:'7 days',c:'#e3b341'},
+  Checklist:{t:'tbb',cd:'2 hrs', c:'#e3b341'},
 };
-const CAT = {'tb-grind':'GRIND','tb-gamble':'GAMBLE','tb-bonus':'BONUS','tb-sell':'SELL'};
-const STATUS = {
-  online:       {cls:'dot-online',  lbl:'Online — Farming Active'},
-  connecting:   {cls:'dot-pending', lbl:'Connecting…'},
-  reconnecting: {cls:'dot-pending', lbl:'Reconnecting…'},
-  waiting:      {cls:'dot-pending', lbl:'Waiting for login…'},
-  no_channel:   {cls:'dot-pending', lbl:'Channel ID needed'},
-  error:        {cls:'dot-error',   lbl:'Error'},
+const CAT={'tbg':'GRIND','tbp':'GAMBLE/FIGHT','tbb':'BONUS','tbs':'SELL'};
+const ST={
+  online:      {c:'on',  l:'Online — Farming Active'},
+  connecting:  {c:'pend',l:'Connecting…'},
+  reconnecting:{c:'pend',l:'Reconnecting…'},
+  waiting:     {c:'pend',l:'Waiting for login…'},
+  no_channel:  {c:'pend',l:'Channel ID needed'},
+  error:       {c:'err', l:'Error'},
 };
-const fmt  = n => Number(n||0).toLocaleString();
-const fmtT = s => {
-  if(!s) return '—';
-  const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), sec=s%60;
-  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+const EMOJI={
+  chipmunk:'🐿️',rabbit:'🐰',rabbit2:'🐰',mouse:'🐭',mouse2:'🐭',bee:'🐝',
+  butterfly:'🦋',snail:'🐌',beetle:'🪲',bug:'🐛',rooster:'🐓',sheep:'🐑',
+  chick:'🐣',baby_chick:'🐥',duck:'🦆',frog:'🐸',cat:'🐱',cat2:'🐱',
+  dog:'🐶',dog2:'🐶',pig:'🐷',pig2:'🐷',cow:'🐄',cow2:'🐄',horse:'🐴',
+  hamster:'🐹',parrot:'🦜',otter:'🦦',penguin:'🐧',panda:'🐼',fox:'🦊',
+  bear:'🐻',wolf:'🐺',deer:'🦌',shrimp:'🦐',lion:'🦁',tiger:'🐯',tiger2:'🐯',
+  monkey:'🐒',eagle:'🦅',owl:'🦉',camel:'🐪',crocodile:'🐊',shark:'🦈',
+  whale:'🐳',whale2:'🐳',dolphin:'🐬',turtle:'🐢',elephant:'🐘',giraffe:'🦒',
+  zebra:'🦓',gorilla:'🦍',gfox:'🦊',gshrimp:'🦐',gdeer:'🦌',
 };
+const fmt=n=>Number(n||0).toLocaleString();
+const fmtT=s=>{if(!s)return'—';const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),sc=s%60;return`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sc).padStart(2,'0')}`};
+let chShown=false;
 
-const EMOJI_MAP = {
-  gfox:'🦊',gshrimp:'🦐',gdeer:'🦌',fcat:'🐱',fdog:'🐶',fbear:'🐻',fwolf:'🐺',
-  lion:'🦁',tiger:'🐯',panda:'🐼',otter:'🦦',penguin:'🐧',parrot:'🦜',
-  chipmunk:'🐿️',rabbit:'🐰',mouse:'🐭',bee:'🐝',butterfly:'🦋',rooster:'🐓',
-  sheep:'🐑',fox:'🦊',cat:'🐱',dog:'🐶',bear:'🐻',wolf:'🐺',deer:'🦌',
-  duck:'🦆',hamster:'🐹',pig:'🐷',horse:'🐴',cow:'🐄',
-};
+async function refresh(){
+  let d;try{d=await(await fetch('/api/stats')).json()}catch{return}
 
-let chModalShown = false;
+  // status
+  const {c,l}=ST[d.status]||{c:'off',l:d.status};
+  document.getElementById('dot').className='dot '+c;
+  document.getElementById('stext').textContent=l;
 
-async function refresh() {
-  let d; try { d = await (await fetch('/api/stats')).json(); } catch { return; }
-
-  // Status
-  const {cls, lbl} = STATUS[d.status] || {cls:'dot-off', lbl:d.status};
-  document.getElementById('dot').className = 'dot ' + cls;
-  document.getElementById('status-text').textContent = lbl;
-
-  // Team status
-  const tdot  = document.getElementById('team-dot');
-  const tlbl  = document.getElementById('team-label');
-  const tbadge = document.getElementById('team-status-badge');
-  const tfeat = document.getElementById('team-feat-badge');
-  if (d.team_ready) {
-    tdot.className = 'dot dot-online';
-    tlbl.textContent = 'Team: Ready ✓';
-    tbadge.textContent = '✓ Team Active';
-    tbadge.style.background = '#0f2d1a'; tbadge.style.color = '#3fb950';
-    tbadge.style.borderColor = '#3fb95044';
-    tfeat.textContent = '✓ Auto Team Created';
-  } else {
-    tdot.className = 'dot dot-pending';
-    tlbl.textContent = 'Team: Setting up…';
-    tbadge.textContent = '⟳ Setting up…';
-    tbadge.style.background = '#1a0e2d'; tbadge.style.color = '#bc8cff';
-    tbadge.style.borderColor = '#bc8cff44';
-    tfeat.textContent = '⟳ Auto Team Create';
+  // team
+  const tb=document.getElementById('team-badge'),tl=document.getElementById('tlabel'),bt=document.getElementById('b-team');
+  const tdot=document.getElementById('tdot');
+  if(d.team_ready){
+    tb.textContent='✓ Team Active'; tb.style.cssText='font-size:.74rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#0f2d1a;color:#3fb950;border:1px solid #3fb95044';
+    tl.textContent='Team: Ready ✓'; tdot.className='dot on'; bt.textContent='✓ Auto Team Created';
+  }else{
+    tb.textContent='⟳ Setting up…'; tb.style.cssText='font-size:.74rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#1a0e2d;color:#bc8cff;border:1px solid #bc8cff44';
+    tl.textContent='Team: Building…'; tdot.className='dot pend'; bt.textContent='⟳ Auto Team';
   }
+  document.getElementById('streak-pill').textContent='Streak: '+(d.battle_streak||0);
+  document.getElementById('wpn-pill').textContent='Weapons: '+(d.weapons_equipped||0);
 
-  // Streak pill
-  const streak = d.battle_streak || 0;
-  document.getElementById('streak-pill').textContent = `🔥 Streak: ${streak}`;
-  document.getElementById('streak-val').textContent = streak;
-
-  // Channel modal
-  if (!d.channel_id_set && !chModalShown && d.status !== 'waiting') {
-    chModalShown = true;
-    document.getElementById('ch-modal').style.display = 'flex';
-    setTimeout(() => document.getElementById('ch-input').focus(), 100);
+  // channel modal
+  if(!d.channel_id_set&&!chShown&&d.status!=='waiting'){
+    chShown=true;
+    document.getElementById('ch-modal').style.display='flex';
+    setTimeout(()=>document.getElementById('ch-in').focus(),100);
   }
+  // banners
+  const eb=document.getElementById('eb');
+  eb.style.display=(d.status==='error'&&d.last_error)?'block':'none';
+  if(d.last_error)document.getElementById('emsg').textContent=d.last_error;
+  const pb=document.getElementById('pb');
+  pb.style.display=d.paused?'block':'none';
+  if(d.paused)document.getElementById('preason').textContent=d.pause_reason||'Break…';
 
-  // Banners
-  const eb = document.getElementById('error-banner');
-  eb.style.display = (d.status === 'error' && d.last_error) ? 'block' : 'none';
-  if (d.last_error) document.getElementById('error-msg').textContent = d.last_error;
+  // target
+  const real=d.real_cowony||0,rate=d.daily_rate||0,pct=Math.min(Math.round(real/85000*100),100);
+  document.getElementById('tpct').textContent=pct+'%';
+  document.getElementById('pfill').style.width=pct+'%';
+  document.getElementById('elabel').textContent=fmt(real)+' cowony (real)';
+  document.getElementById('rlabel').textContent=fmt(rate)+'/day · Goal: 85,000';
 
-  const pb = document.getElementById('pause-banner');
-  pb.style.display = d.paused ? 'block' : 'none';
-  if (d.paused) document.getElementById('pause-reason').textContent = d.pause_reason || 'Break…';
+  // stats
+  document.getElementById('s-cowony').textContent=fmt(real);
+  document.getElementById('s-rate').textContent=fmt(rate);
+  document.getElementById('s-xp').textContent=fmt(d.total_xp);
+  document.getElementById('s-won').textContent=fmt(d.battles_won);
+  document.getElementById('s-lost-sub').textContent=fmt(d.battles_lost)+' lost';
+  document.getElementById('s-streak').textContent=d.battle_streak||0;
+  document.getElementById('s-wpn').textContent=fmt(d.weapons_equipped);
+  document.getElementById('s-animals').textContent=fmt(d.animals_caught);
+  document.getElementById('s-loot').textContent=fmt(d.lootboxes_opened);
+  document.getElementById('s-uptime').textContent=fmtT(d.uptime_seconds);
 
-  // Target
-  const target = d.daily_target || 85000;
-  const real   = d.real_cowony || 0;
-  const rate   = d.daily_rate  || 0;
-  const pct    = Math.min(Math.round(real / target * 100), 100);
-  document.getElementById('target-pct').textContent = pct + '%';
-  document.getElementById('prog-fill').style.width  = pct + '%';
-  document.getElementById('earned-label').textContent = fmt(real) + ' cowony (real)';
-  document.getElementById('rate-label').textContent   = fmt(rate) + ' / day · Target: 85,000';
+  // info bar
+  document.getElementById('i-acct').textContent=d.logged_in_as||'—';
+  document.getElementById('i-chan').textContent=d.channel_name?'#'+d.channel_name:(d.channel_id||'—');
+  document.getElementById('i-cmds').textContent=fmt(d.total_commands);
+  document.getElementById('i-last').textContent=d.last_command_time||'—';
 
-  // Stats
-  document.getElementById('real-cowony').textContent  = fmt(real);
-  document.getElementById('daily-rate').textContent   = fmt(rate);
-  document.getElementById('total-xp').textContent     = fmt(d.total_xp);
-  document.getElementById('uptime').textContent       = fmtT(d.uptime_seconds);
-  document.getElementById('battles-won').textContent  = fmt(d.battles_won);
-  document.getElementById('animals-caught').textContent = fmt(d.animals_caught);
-  document.getElementById('lootboxes').textContent    = fmt(d.lootboxes_opened);
-
-  // Info bar
-  document.getElementById('account').textContent   = d.logged_in_as || '—';
-  document.getElementById('channel').textContent   = d.channel_name ? '#' + d.channel_name : (d.channel_id || '—');
-  document.getElementById('total-cmds').textContent = fmt(d.total_commands);
-  document.getElementById('last-cmd').textContent  = d.last_command_time || '—';
-
-  // Team panel
-  const animals = d.team_animals || [];
-  const panel   = document.getElementById('team-panel');
-  if (!animals.length) {
-    panel.innerHTML = `<div class="no-team">${d.team_ready ? 'Team active (battle response will show animals)' : 'Bot is auto-creating your battle team…'}</div>`;
-  } else {
-    panel.innerHTML = animals.map(a => {
-      const em = EMOJI_MAP[a.emoji] || '🐾';
-      return `<div class="animal-card">
-        <div class="animal-emoji">${em}</div>
-        <div class="animal-level">L.${a.level}</div>
-        <div class="animal-name">${a.emoji}</div>
-      </div>`;
+  // team panel
+  const animals=d.team_animals||[],panel=document.getElementById('team-panel');
+  if(!animals.length){
+    panel.innerHTML=`<div style="color:#484f58;font-size:.8rem;padding:6px 0">${d.team_ready?'Team active (will show animals after next battle)':'Creating team from your caught animals…'}</div>`;
+  }else{
+    panel.innerHTML=animals.map(a=>{
+      const em=EMOJI[a.emoji]||'🐾';
+      const wpnHtml=a.has_weapon
+        ?`<span class="wpn-badge">⚔️</span>`
+        :`<span class="no-wpn">no wpn</span>`;
+      return`<div class="ac">${wpnHtml}<div class="ac-emoji">${em}</div><div class="ac-level">L.${a.level}</div><div class="ac-name">${a.emoji}</div></div>`;
     }).join('');
   }
 
-  // Activity log
-  const acts = d.activity_log || [];
-  const alog = document.getElementById('activity-log');
-  if (!acts.length) {
-    alog.innerHTML = '<div style="color:#484f58;text-align:center;padding:22px;font-size:.8rem">Waiting for first action…</div>';
-  } else {
-    alog.innerHTML = acts.map(a =>
-      `<div class="log-item"><span class="log-time">${a.time}</span><span class="log-${a.kind||'info'}">${a.msg}</span></div>`
-    ).join('');
-  }
+  // activity log
+  const acts=d.activity_log||[];
+  const al=document.getElementById('alog');
+  al.innerHTML=acts.length?acts.map(a=>`<div class="li"><span class="lt">${a.time}</span><span class="${a.kind||'info'}">${a.msg}</span></div>`).join('')
+    :'<div style="color:#484f58;text-align:center;padding:20px;font-size:.8rem">Waiting for first action…</div>';
 
-  // Cowony events
-  const evts = d.real_events || [];
-  const elog = document.getElementById('cowony-events');
-  if (!evts.length) {
-    elog.innerHTML = '<div style="color:#484f58;text-align:center;padding:22px;font-size:.8rem">No cowony events yet…</div>';
-  } else {
-    elog.innerHTML = evts.map(e =>
-      `<div class="log-item"><span class="log-time">${e.time}</span><span class="${e.kind==='earn'?'log-earn':'log-loss'}">${e.amount}</span></div>`
-    ).join('');
-  }
+  // cowony events
+  const evs=d.real_events||[];
+  const cl=document.getElementById('clog');
+  cl.innerHTML=evs.length?evs.map(e=>`<div class="li"><span class="lt">${e.time}</span><span class="${e.kind==='earn'?'earn':'loss'}">${e.amount}</span></div>`).join('')
+    :'<div style="color:#484f58;text-align:center;padding:20px;font-size:.8rem">No cowony events yet…</div>';
 
-  // Command table
-  const stats = d.command_stats || {};
-  const keys  = Object.keys(stats);
-  const maxV  = keys.length ? Math.max(...keys.map(k => stats[k])) : 1;
-  const tbody = document.getElementById('cmd-body');
-  if (!keys.length) {
-    tbody.innerHTML = `<tr><td colspan="5" style="color:#484f58;text-align:center;padding:22px">${d.status==='online' ? 'Sending first commands…' : 'Waiting for bot…'}</td></tr>`;
+  // command table
+  const stats=d.command_stats||{},keys=Object.keys(stats);
+  const maxV=keys.length?Math.max(...keys.map(k=>stats[k])):1;
+  const tb2=document.getElementById('ctbody');
+  if(!keys.length){
+    tb2.innerHTML=`<tr><td colspan="5" style="color:#484f58;text-align:center;padding:20px">${d.status==='online'?'Sending first commands…':'Waiting for bot…'}</td></tr>`;
     return;
   }
-  const catLabel = {
-    'tb-grind':'GRIND','tb-gamble':'GAMBLE','tb-bonus':'BONUS','tb-sell':'SELL'
-  };
-  tbody.innerHTML = keys.slice().sort((a, b) => stats[b] - stats[a]).map(name => {
-    const m = CMD_META[name] || {tb:'tb-grind', bar:'b-hunt', cd:'—'};
-    const p = Math.round(stats[name] / maxV * 100);
-    return `<tr>
-      <td style="font-family:monospace;font-size:.76rem;font-weight:600">owo ${name.toLowerCase()}</td>
-      <td><span class="type-badge ${m.tb}">${catLabel[m.tb]||'CMD'}</span></td>
+  tb2.innerHTML=keys.slice().sort((a,b)=>stats[b]-stats[a]).map(name=>{
+    const m=META[name]||{t:'tbs',cd:'—',c:'#6e7681'};
+    const p=Math.round(stats[name]/maxV*100);
+    return`<tr>
+      <td style="font-family:monospace;font-size:.76rem;font-weight:600;color:#e6edf3">owo ${name.toLowerCase()}</td>
+      <td><span class="tbadge ${m.t}">${CAT[m.t]||'CMD'}</span></td>
       <td style="color:#3fb950;font-weight:700">${fmt(stats[name])}</td>
       <td style="color:#6e7681">${m.cd}</td>
-      <td><div class="bar-bg"><div class="bar-fill ${m.bar}" style="width:${p}%"></div></div></td>
+      <td><div class="bbar"><div class="bfill" style="width:${p}%;background:${m.c}"></div></div></td>
     </tr>`;
   }).join('');
 }
 
-async function saveChannel() {
-  const val = document.getElementById('ch-input').value.trim();
-  const err = document.getElementById('ch-err');
-  if (!val) { err.textContent = 'Enter channel ID'; err.style.display = 'block'; return; }
-  err.style.display = 'none';
-  const r = await fetch('/api/set_channel', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({channel_id:val})});
-  const data = await r.json();
-  if (data.success) { document.getElementById('ch-modal').style.display = 'none'; chModalShown = false; }
-  else { err.textContent = data.error || 'Failed'; err.style.display = 'block'; }
+async function saveChannel(){
+  const v=document.getElementById('ch-in').value.trim(),err=document.getElementById('ch-err');
+  if(!v){err.textContent='Enter channel ID';err.style.display='block';return}
+  err.style.display='none';
+  const r=await fetch('/api/set_channel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({channel_id:v})});
+  const data=await r.json();
+  if(data.success){document.getElementById('ch-modal').style.display='none';chShown=false}
+  else{err.textContent=data.error||'Failed';err.style.display='block'}
 }
-
-async function doLogout() {
-  if (!confirm('Logout and stop farming?')) return;
-  await fetch('/api/logout', {method:'POST'});
-  window.location.href = '/login';
+async function doLogout(){
+  if(!confirm('Stop farming and logout?'))return;
+  await fetch('/api/logout',{method:'POST'});
+  window.location.href='/login';
 }
-
 refresh();
-setInterval(refresh, 3000);
+setInterval(refresh,3000);
 </script>
 </body>
 </html>

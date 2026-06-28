@@ -19,84 +19,100 @@ app.secret_key = SECRET_KEY
 
 # ─── State ────────────────────────────────────────────────────────────────────
 state = {
-    "status":             "waiting",
-    "logged_in_as":       "",
-    "channel_name":       "",
-    "channel_id":         "",
-    "token":              os.getenv("DISCORD_TOKEN", ""),
-    "real_cowony":        0,
-    "real_events":        [],
-    "battle_streak":      0,
-    "battles_won":        0,
-    "total_xp":           0,
-    "team_animals":       [],
-    "team_ready":         False,
-    "total_commands":     0,
-    "command_stats":      {},
-    "start_time":         None,
-    "last_error":         "",
-    "last_command":       "",
-    "last_command_time":  None,
-    "paused":             False,
-    "pause_reason":       "",
-    "lootboxes_opened":   0,
-    "quests_completed":   0,
-    "animals_caught":     0,
-    "activity_log":       [],
-    # Internal
-    "_cmd_cooldowns":     {},   # name -> next_allowed_at timestamp
-    "_team_creating":     False,
-    "_team_try_idx":      0,
+    "status":           "waiting",
+    "logged_in_as":     "",
+    "channel_name":     "",
+    "channel_id":       "",
+    "token":            os.getenv("DISCORD_TOKEN", ""),
+    "real_cowony":      0,
+    "real_events":      [],
+    "battle_streak":    0,
+    "battles_won":      0,
+    "battles_lost":     0,
+    "total_xp":         0,
+    "team_animals":     [],     # [{"emoji":"chipmunk","level":13,"has_weapon":False},...]
+    "team_ready":       False,
+    "weapons_equipped": 0,
+    "total_commands":   0,
+    "command_stats":    {},
+    "start_time":       None,
+    "last_error":       "",
+    "last_command":     "",
+    "last_command_time":None,
+    "paused":           False,
+    "pause_reason":     "",
+    "lootboxes_opened": 0,
+    "quests_completed": 0,
+    "animals_caught":   0,
+    "activity_log":     [],
+    # internals
+    "_cooldowns":       {},     # name -> resume_at
+    "_team_creating":   False,
+    "_team_add_ok":     False,
+    "_equipping":       False,
 }
 
 send_lock         = None
 last_sent_at      = 0.0
-MIN_GAP           = 4.5       # minimum seconds between any two commands
+MIN_GAP           = 5.0          # minimum seconds between any two commands
 bot_restart_event = threading.Event()
 
-# ─── Animals to try for team creation ────────────────────────────────────────
-# Common/easily caught animals FIRST (user screenshots show: chipmunk, cat2)
-TEAM_ANIMALS_TO_TRY = [
-    # Most likely to be caught via hunt/fish (common & uncommon)
-    "chipmunk","cat","dog","rabbit","mouse","bee","butterfly","snail",
-    "beetle","bug","rooster","sheep","chick","duck","frog","snake",
-    "pig","cow","horse","hamster","parrot","otter","penguin","panda",
-    # Rare/epic animals
-    "fox","bear","wolf","deer","shrimp","lion","tiger","monkey","eagle",
-    "owl","peacock","flamingo","toucan","camel","crocodile","shark",
-    "whale","dolphin","turtle","elephant","giraffe","zebra","gorilla",
-    # Golden variants (unlikely unless specifically hunted)
+# ─── Common animals — tried first (what most players catch via hunt/fish) ─────
+TEAM_ANIMALS = [
+    # Try both base names AND "2" variants (OWO uses :rabbit2:, :mouse2:, :cat2: etc.)
+    "chipmunk",
+    "rabbit","rabbit2",
+    "mouse","mouse2",
+    "cat","cat2",
+    "dog","dog2",
+    "pig","pig2",
+    "bee","butterfly","snail","beetle","bug","baby_chick","chick",
+    "rooster","sheep","duck","frog","cow","cow2","horse","hamster",
+    "parrot","otter","penguin","panda",
+    "fox","bear","wolf","deer","shrimp","lion","tiger","tiger2",
+    "monkey","eagle","owl","camel","crocodile","shark",
+    "whale","whale2","dolphin","turtle","elephant","giraffe","zebra","gorilla",
     "gfox","gshrimp","gdeer","gcamel","gcat","gdog","gbear",
 ]
 
-# ─── Commands with cooldowns ──────────────────────────────────────────────────
-# Each command runs on its own timer managed by the global scheduler
+# ─── Commands ─────────────────────────────────────────────────────────────────
+# hunt + battle = core XP+cowony loop (run most frequently)
+# gambling uses RANDOM amounts (set at send time) for human-like behavior
 COMMANDS = [
-    {"cmd": "owo hunt",          "delay": 65,     "name": "Hunt",      "priority": 1},
-    {"cmd": "owo battle",        "delay": 68,     "name": "Battle",    "priority": 1},
-    {"cmd": "owo fish",          "delay": 72,     "name": "Fish",      "priority": 2},
-    {"cmd": "owo pray",          "delay": 305,    "name": "Pray",      "priority": 3},
-    {"cmd": "owo curse",         "delay": 310,    "name": "Curse",     "priority": 3},
-    {"cmd": "owo work",          "delay": 910,    "name": "Work",      "priority": 4},
-    {"cmd": "owo crime",         "delay": 1810,   "name": "Crime",     "priority": 4},
-    {"cmd": "owo slots 500",     "delay": 610,    "name": "Slots",     "priority": 5},
-    {"cmd": "owo coinflip 500",  "delay": 315,    "name": "Coinflip",  "priority": 5},
-    {"cmd": "owo sell all",      "delay": 7210,   "name": "Sell",      "priority": 6},
-    {"cmd": "owo checklist",     "delay": 3615,   "name": "Checklist", "priority": 6},
-    {"cmd": "owo daily",         "delay": 43210,  "name": "Daily",     "priority": 7},
-    {"cmd": "owo weekly",        "delay": 604815, "name": "Weekly",    "priority": 8},
+    {"cmd": "owo hunt",       "delay": 65,     "name": "Hunt"},
+    {"cmd": "owo battle",     "delay": 68,     "name": "Battle"},
+    {"cmd": "owo fish",       "delay": 72,     "name": "Fish"},
+    {"cmd": "owo pray",       "delay": 305,    "name": "Pray"},
+    {"cmd": "owo curse",      "delay": 310,    "name": "Curse"},
+    {"cmd": "owo work",       "delay": 910,    "name": "Work"},
+    {"cmd": "owo crime",      "delay": 1810,   "name": "Crime"},
+    {"cmd": "owo lootbox",    "delay": 14410,  "name": "Lootbox"},   # try every ~4h
+    {"cmd": "owo SLOTS",      "delay": 610,    "name": "Slots"},     # amount set at send time
+    {"cmd": "owo COINFLIP",   "delay": 315,    "name": "Coinflip"},  # amount set at send time
+    {"cmd": "owo sell all",   "delay": 7210,   "name": "Sell"},
+    {"cmd": "owo daily",      "delay": 43210,  "name": "Daily"},
+    {"cmd": "owo weekly",     "delay": 604815, "name": "Weekly"},
+    {"cmd": "owo checklist",  "delay": 7210,   "name": "Checklist"},
 ]
 
-# ─── Logging ──────────────────────────────────────────────────────────────────
+# ─── Helpers ──────────────────────────────────────────────────────────────────
 def log_activity(msg: str, kind: str = "info"):
     entry = {"time": datetime.now().strftime("%H:%M:%S"), "msg": msg, "kind": kind}
     state["activity_log"].insert(0, entry)
     state["activity_log"] = state["activity_log"][:30]
     print(f"[{entry['time']}] {msg}")
 
-# ─── Parsers ──────────────────────────────────────────────────────────────────
-def parse_cowony_earned(text: str) -> int:
-    patterns = [
+def get_text(message) -> str:
+    parts = [message.content or ""]
+    for e in message.embeds:
+        if e.title:       parts.append(e.title)
+        if e.description: parts.append(e.description)
+        if e.footer and e.footer.text: parts.append(e.footer.text)
+        for f in e.fields: parts.append(f"{f.name} {f.value}")
+    return "\n".join(parts)
+
+def parse_earned(text: str) -> int:
+    for p in [
         r'daily\s*:cowoncy:\s*(\d[\d,]+)',
         r'weekly\s*:cowoncy:\s*(\d[\d,]+)',
         r'total of\s*:cowoncy:\s*(\d[\d,]+)',
@@ -104,11 +120,9 @@ def parse_cowony_earned(text: str) -> int:
         r'earn[ed]*\s*:cowoncy:\s*(\d[\d,]+)',
         r'Here is your\s+\w+\s+:cowoncy:\s*(\d[\d,]+)',
         r'\+\s*:cowoncy:\s*(\d[\d,]+)',
-    ]
-    for p in patterns:
+    ]:
         m = re.search(p, text, re.I)
-        if m:
-            return int(m.group(1).replace(",", ""))
+        if m: return int(m.group(1).replace(",", ""))
     return 0
 
 def parse_xp(text: str) -> int:
@@ -119,37 +133,23 @@ def parse_streak(text: str) -> int:
     m = re.search(r'Streak:\s*(\d+)', text, re.I)
     return int(m.group(1)) if m else -1
 
-def parse_turns(text: str) -> int:
-    m = re.search(r'won in (\d+) turn', text, re.I)
-    return int(m.group(1)) if m else 0
+def team_animal_names() -> list:
+    """Get current team animal emoji names for weapon equipping."""
+    return [a["emoji"] for a in state.get("team_animals", [])]
 
-def get_full_text(message) -> str:
-    """Get all text from a message including embeds."""
-    parts = [message.content or ""]
-    for emb in message.embeds:
-        if emb.title:       parts.append(emb.title)
-        if emb.description: parts.append(emb.description)
-        if emb.footer and emb.footer.text: parts.append(emb.footer.text)
-        for f in emb.fields:
-            parts.append(f"{f.name} {f.value}")
-    return "\n".join(parts)
-
-# ─── Anti-detect send (GLOBAL RATE-AWARE) ────────────────────────────────────
-async def smart_send(channel, cmd: str, skip_gap=False):
-    """Send with typing sim + guaranteed minimum gap between all commands."""
+# ─── Anti-detect send ─────────────────────────────────────────────────────────
+async def smart_send(channel, cmd: str):
     global send_lock, last_sent_at
-
     async with send_lock:
-        if not skip_gap:
-            now = time.time()
-            gap = now - last_sent_at
-            if gap < MIN_GAP:
-                await asyncio.sleep(MIN_GAP - gap + random.uniform(0.8, 2.0))
+        # Enforce minimum gap between all sends
+        gap = time.time() - last_sent_at
+        if gap < MIN_GAP:
+            await asyncio.sleep(MIN_GAP - gap + random.uniform(1.0, 2.5))
 
-        # Simulate typing
+        # Simulate human typing speed
         wpm      = random.uniform(50, 85)
         chars    = len(cmd) + random.randint(-2, 4)
-        duration = min(max((chars / (wpm * 5)) * 60, 0.5), 2.5)
+        duration = min(max((chars / (wpm * 5)) * 60, 0.6), 2.8)
         async with channel.typing():
             await asyncio.sleep(duration)
 
@@ -157,72 +157,107 @@ async def smart_send(channel, cmd: str, skip_gap=False):
         last_sent_at = time.time()
         await asyncio.sleep(random.uniform(1.5, 2.5))
 
-# ─── Team creation: try animal names one by one ───────────────────────────────
-async def try_create_team(channel):
-    """Try animal names one by one until team has at least 1 animal (up to 3)."""
+# ─── Team creation: try animals one by one ────────────────────────────────────
+async def auto_create_team(channel):
     if state["_team_creating"]:
         return
     state["_team_creating"] = True
     state["team_ready"]     = False
     log_activity("Auto-creating battle team...", "info")
 
-    slots_added = 0
-    attempts    = 0
-
-    for animal in TEAM_ANIMALS_TO_TRY:
-        if slots_added >= 3:
+    slots = 0
+    for animal in TEAM_ANIMALS:
+        if slots >= 3:
             break
-        if attempts >= 40:
-            log_activity("Tried 40 animals — will retry after catching more", "warn")
-            break
+        state["_team_add_ok"] = False
 
-        attempts += 1
-        # Reset flag before each attempt so we can detect next success
-        state["_last_team_add_success"] = False
-
-        log_activity(f"Team slot {slots_added+1}: trying '{animal}'", "info")
+        log_activity(f"Team slot {slots+1}: trying '{animal}'", "info")
         try:
             await smart_send(channel, f"owo team add {animal}")
-            await asyncio.sleep(random.uniform(3.5, 5.5))   # wait for OWO reply
+            await asyncio.sleep(random.uniform(6, 10))  # wait for OWO reply + avoid rate limit
         except Exception as e:
-            log_activity(f"Team add error: {e}", "warn")
+            log_activity(f"Team add err: {e}", "warn")
             await asyncio.sleep(3)
             continue
 
-        if state.get("_last_team_add_success"):
-            slots_added += 1
-            log_activity(f"'{animal}' added! Team: {slots_added}/3 slots", "earn")
+        if state["_team_add_ok"]:
+            slots += 1
             state["team_ready"] = True
+            log_activity(f"'{animal}' added! Slots: {slots}/3", "earn")
             await asyncio.sleep(random.uniform(2, 4))
-        # else: OWO said "don't own" or no response — silently try next animal
 
     state["_team_creating"] = False
-
     if state["team_ready"]:
-        log_activity(f"Battle team ready! ({slots_added} animal(s))", "earn")
+        log_activity(f"Battle team ready! ({slots} animals)", "earn")
+        # Immediately try to equip weapons
+        await asyncio.sleep(3)
+        await auto_equip_weapons(channel)
     else:
-        log_activity("No animals owned yet — hunt/fish to catch some first!", "warn")
+        log_activity("No animals to add — hunt/fish first to catch some!", "warn")
 
-# ─── OWO response handler ─────────────────────────────────────────────────────
+# ─── Auto-equip weapons to team animals ───────────────────────────────────────
+async def auto_equip_weapons(channel):
+    """Try owo weapon equip for each team animal."""
+    if state["_equipping"]:
+        return
+    animals = team_animal_names()
+    if not animals:
+        return
+
+    state["_equipping"] = True
+    log_activity("Equipping weapons to team...", "info")
+    equipped = 0
+    for animal in animals:
+        try:
+            await smart_send(channel, f"owo weapon equip {animal}")
+            await asyncio.sleep(random.uniform(3, 5))
+            equipped += 1
+        except Exception as e:
+            log_activity(f"Weapon equip err ({animal}): {e}", "warn")
+    state["_equipping"] = False
+    if equipped:
+        log_activity(f"Weapon equip attempted for {equipped} animals", "info")
+
+# ─── Auto open lootbox / crate ────────────────────────────────────────────────
+async def auto_open_lootbox(channel):
+    await asyncio.sleep(random.uniform(4, 8))
+    log_activity("Lootbox → opening!", "earn")
+    try:
+        await smart_send(channel, "owo lootbox")
+        state["lootboxes_opened"] += 1
+        await asyncio.sleep(4)
+        await auto_equip_weapons(channel)  # equip any new weapons
+    except Exception as e:
+        log_activity(f"Lootbox err: {e}", "warn")
+
+async def auto_open_crate(channel):
+    await asyncio.sleep(random.uniform(4, 8))
+    log_activity("Weapon crate → opening!", "earn")
+    try:
+        await smart_send(channel, "owo crate")
+        await asyncio.sleep(4)
+        await auto_equip_weapons(channel)  # equip the new weapon
+    except Exception as e:
+        log_activity(f"Crate err: {e}", "warn")
+
+# ─── OWO message handler ──────────────────────────────────────────────────────
 async def handle_owo_message(message, channel, client):
-    full = get_full_text(message)
+    full = get_text(message)
     low  = full.lower()
 
-    # ── Rate limit — mark command as rate-limited ─────────────────────────────
+    # ── Rate limit ────────────────────────────────────────────────────────────
     if "slow down" in low:
         m = re.search(r'in (\d+)\s*(minute|second)', full, re.I)
-        wait = 0
+        wait = 30  # default
         if m:
             val  = int(m.group(1))
             wait = val * 60 if "minute" in m.group(2).lower() else val
-        # Back off a bit more than OWO says
-        extra = wait + random.randint(8, 20)
-        log_activity(f"Rate limited — backing off {extra}s", "warn")
-        # Record global cooldown to slow everything down
-        state["_cmd_cooldowns"]["__global__"] = time.time() + extra
+        backoff = wait + random.randint(10, 25)
+        log_activity(f"OWO rate limit — backing off {backoff}s", "warn")
+        state["_cooldowns"]["__global__"] = time.time() + backoff
 
-    # ── Real cowony tracking ──────────────────────────────────────────────────
-    earned = parse_cowony_earned(full)
+    # ── Real cowony ───────────────────────────────────────────────────────────
+    earned = parse_earned(full)
     if earned > 0:
         state["real_cowony"] += earned
         state["real_events"].insert(0, {
@@ -230,106 +265,122 @@ async def handle_owo_message(message, channel, client):
             "amount": f"+{earned:,}", "kind": "earn"
         })
         state["real_events"] = state["real_events"][:30]
-        log_activity(f"+{earned:,} cowony earned", "earn")
+        log_activity(f"+{earned:,} cowony", "earn")
 
-    # ── Battle won ────────────────────────────────────────────────────────────
-    if "you won in" in low:
+    # ── Battle result ─────────────────────────────────────────────────────────
+    if "goes into battle" in low:
         xp     = parse_xp(full)
         streak = parse_streak(full)
-        turns  = parse_turns(full)
-        if xp > 0:     state["total_xp"]     += xp
+        if xp > 0: state["total_xp"] += xp
         if streak >= 0: state["battle_streak"] = streak
-        state["battles_won"] += 1
 
-        # Parse team animal levels from the battle message
-        team_found = []
-        for m2 in re.finditer(r'L\.\s*(\d+)\s*:(\w+):', full):
-            team_found.append({"level": int(m2.group(1)), "emoji": m2.group(2)})
-        if team_found:
-            state["team_animals"] = team_found[:3]
+        # Parse team animal info (level + has weapon)
+        team = []
+        for m2 in re.finditer(r'L\.\s*(\d+)\s*:(\w+):\s*-\s*(.*?)(?:\n|$)', full):
+            level   = int(m2.group(1))
+            emoji   = m2.group(2)
+            weapon  = m2.group(3).strip()
+            has_wpn = weapon != "no weapon" and bool(weapon)
+            team.append({"emoji": emoji, "level": level, "has_weapon": has_wpn})
 
-        log_activity(f"Battle won! +{xp:,}xp | Streak {state['battle_streak']} | {turns}t", "earn")
+        if team:
+            # First 3 entries before the enemy team
+            sections = full.split("\n")
+            my_team = []
+            in_my   = False
+            for line in sections:
+                if "goes into battle" in line.lower():
+                    in_my = True
+                if in_my and ("enemy team" in line.lower() or "🔥" in line or "cat" in line.lower()):
+                    break
+                if in_my:
+                    for mt in team:
+                        if mt["emoji"] in line and mt not in my_team:
+                            my_team.append(mt)
+            state["team_animals"] = my_team[:3] if my_team else team[:3]
 
-    # ── Team add confirmation ─────────────────────────────────────────────────
-    if ("added" in low and "team" in low) or ("team" in low and "member" in low):
-        state["team_ready"]              = True
-        state["_last_team_add_success"]  = True
-        log_activity("Animal added to battle team!", "earn")
+        if "you won" in low or "won in" in low:
+            state["battles_won"] += 1
+            log_activity(f"Battle won! +{xp:,}xp | Streak {state['battle_streak']}", "earn")
+        elif "you lost" in low or "lost in" in low:
+            state["battles_lost"] += 1
+            log_activity(f"Battle lost. +{xp:,}xp", "info")
+            # If team has no weapons, try equipping
+            no_weapons = all(not a["has_weapon"] for a in state["team_animals"])
+            if no_weapons and not state["_equipping"]:
+                client.loop.create_task(auto_equip_weapons(channel))
 
-    # ── Team already full → team is ready ────────────────────────────────────
-    if "team is full" in low or "already on your team" in low:
-        state["team_ready"]              = True
-        state["_last_team_add_success"]  = True   # count as success too
-        state["_team_creating"]          = False
-        log_activity("Team already full — ready to battle!", "earn")
+    # ── Detect ANY existing team members in OWO response (L.X :animal: pattern) ─
+    # This catches: owo team response, battle embed, and team add confirmation
+    level_matches = re.findall(r'L\.\s*(\d+)\s*:(\w+):', full)
+    if level_matches and not state["team_ready"]:
+        state["team_ready"]     = True
+        state["_team_add_ok"]   = True
+        state["_team_creating"] = False
+        log_activity("Team detected from OWO response!", "earn")
 
-    # ── Animal not owned / not found → silently skip (try_create_team handles)
-    if "do not own" in low or "not found" in low or "doesn't exist" in low:
-        state["_last_team_add_success"] = False   # ensure not counted
+    # ── Team add success phrases ──────────────────────────────────────────────
+    team_success_phrases = [
+        "added", "successfully", "joined your team",
+        "is now on your team", "battle team", "team member",
+    ]
+    if any(p in low for p in team_success_phrases) and "team" in low:
+        state["_team_add_ok"] = True
+        state["team_ready"]   = True
+        if not level_matches:
+            log_activity("Animal added to team!", "earn")
 
-    # ── No battle team error → auto-create ───────────────────────────────────
+    # ── Already in team / full ────────────────────────────────────────────────
+    if "team is full" in low or "already on your team" in low or "already in your team" in low:
+        state["_team_add_ok"] = True
+        state["team_ready"]   = True
+        state["_team_creating"] = False
+        log_activity("Team already exists / is full!", "earn")
+
+    # ── Animal not found — silently move to next in loop ──────────────────────
+    if "could not find this animal" in low or "do not own this animal" in low:
+        state["_team_add_ok"] = False  # try_create_team loop moves to next animal
+
+    # ── No battle team error ───────────────────────────────────────────────────
     if "do not have an active battle team" in low:
-        log_activity("No battle team — creating now...", "warn")
+        log_activity("No battle team! Auto-creating...", "warn")
         state["team_ready"] = False
         if not state["_team_creating"]:
-            client.loop.create_task(try_create_team(channel))
+            client.loop.create_task(auto_create_team(channel))
+
+    # ── Weapon equipped ────────────────────────────────────────────────────────
+    if "equipped" in low and ("weapon" in low or "sword" in low or "staff" in low
+                               or "bow" in low or "wand" in low):
+        state["weapons_equipped"] += 1
+        log_activity("Weapon equipped on team animal!", "earn")
 
     # ── Hunt result ───────────────────────────────────────────────────────────
-    if "you found" in low or "hunt is empowered" in low:
+    if "spent" in low and "caught" in low:
         xp = parse_xp(full)
         if xp > 0: state["total_xp"] += xp
         state["animals_caught"] += 1
-        team_found2 = []
-        for m2 in re.finditer(r'L\.\s*(\d+)\s*:(\w+):', full):
-            team_found2.append({"level": int(m2.group(1)), "emoji": m2.group(2)})
-        if team_found2:
-            state["team_animals"] = team_found2[:3]
 
-    # ── Fish result ───────────────────────────────────────────────────────────
-    if "caught" in low and ("cowoncy" in low or "common" in low or
-        "uncommon" in low or "rare" in low):
-        state["animals_caught"] += 1
-
-    # ── Lootbox found ─────────────────────────────────────────────────────────
+    # ── Lootbox found → open immediately ─────────────────────────────────────
     if "you found a lootbox" in low:
         client.loop.create_task(auto_open_lootbox(channel))
 
-    # ── Weapon / loot crate ──────────────────────────────────────────────────
+    # ── Weapon/loot crate ─────────────────────────────────────────────────────
     if "weapon crate" in low or "loot crate" in low:
         client.loop.create_task(auto_open_crate(channel))
 
-    # ── Level up ─────────────────────────────────────────────────────────────
+    # ── Level up ──────────────────────────────────────────────────────────────
     if "leveled up" in low:
-        log_activity("Account leveled up!", "earn")
+        log_activity("Level up!", "earn")
 
     # ── Daily collected ───────────────────────────────────────────────────────
     if "here is your daily" in low:
         sm = re.search(r'(\d+)\s+daily streak', full, re.I)
-        s_txt = f" (streak {sm.group(1)})" if sm else ""
-        log_activity(f"Daily collected!{s_txt}", "earn")
+        log_activity(f"Daily done!{' Streak:'+sm.group(1) if sm else ''}", "earn")
 
-    # ── Quest completed ───────────────────────────────────────────────────────
+    # ── Quest complete ─────────────────────────────────────────────────────────
     if "quest" in low and "complet" in low:
         state["quests_completed"] += 1
         log_activity("Quest completed!", "earn")
-
-# ─── Auto open lootbox / crate ────────────────────────────────────────────────
-async def auto_open_lootbox(channel):
-    await asyncio.sleep(random.uniform(4, 8))
-    log_activity("Lootbox found → opening!", "earn")
-    try:
-        await smart_send(channel, "owo lootbox")
-        state["lootboxes_opened"] += 1
-    except Exception as e:
-        log_activity(f"Lootbox err: {e}", "warn")
-
-async def auto_open_crate(channel):
-    await asyncio.sleep(random.uniform(4, 8))
-    log_activity("Crate found → opening!", "earn")
-    try:
-        await smart_send(channel, "owo crate")
-    except Exception as e:
-        log_activity(f"Crate err: {e}", "warn")
 
 # ─── Per-command farming loop ─────────────────────────────────────────────────
 async def farm_command(channel, cmd_info):
@@ -337,67 +388,74 @@ async def farm_command(channel, cmd_info):
     name  = cmd_info["name"]
     delay = cmd_info["delay"]
 
-    # Stagger startup — spread commands out over first 3 minutes
-    idx   = COMMANDS.index(cmd_info)
-    await asyncio.sleep(random.uniform(idx * 8 + 5, idx * 12 + 30))
+    # Stagger startup so all loops don't fire at once
+    idx = COMMANDS.index(cmd_info)
+    await asyncio.sleep(random.uniform(idx * 10 + 8, idx * 15 + 35))
 
-    # Battle waits a bit more for team setup
+    # Battle waits extra for team setup
     if name == "Battle":
-        await asyncio.sleep(35)
+        await asyncio.sleep(45)
 
     break_counter = 0
 
     while True:
-        # Respect global pause
+        # Respect global pause (human break)
         while state["paused"]:
             await asyncio.sleep(5)
 
-        # Respect global rate limit backoff
-        global_resume = state["_cmd_cooldowns"].get("__global__", 0)
+        # Respect global rate-limit backoff
+        global_resume = state["_cooldowns"].get("__global__", 0)
         if global_resume > time.time():
-            wait = global_resume - time.time()
-            log_activity(f"Global cooldown: waiting {wait:.0f}s", "warn")
-            await asyncio.sleep(wait + random.uniform(3, 8))
+            await asyncio.sleep(global_resume - time.time() + random.uniform(3, 8))
             continue
 
         # Respect per-command cooldown
-        cmd_resume = state["_cmd_cooldowns"].get(name, 0)
+        cmd_resume = state["_cooldowns"].get(name, 0)
         if cmd_resume > time.time():
             await asyncio.sleep(cmd_resume - time.time() + random.uniform(2, 5))
             continue
 
-        # 4% random human skip
+        # 4% human skip
         if random.random() < 0.04:
             await asyncio.sleep(delay * random.uniform(0.5, 0.9))
             continue
 
-        # Send command
+        # Build actual command (gambling uses random amounts)
+        actual_cmd = cmd
+        if name == "Slots":
+            amt = random.choice([100, 200, 300, 500, 600, 800, 1000])
+            actual_cmd = f"owo slots {amt}"
+        elif name == "Coinflip":
+            amt  = random.choice([100, 200, 250, 500, 750, 1000])
+            side = random.choice(["heads", "tails"])
+            actual_cmd = f"owo coinflip {amt} {side}"
+
         try:
-            await smart_send(channel, cmd)
+            await smart_send(channel, actual_cmd)
             state["total_commands"] += 1
             state["command_stats"][name] = state["command_stats"].get(name, 0) + 1
-            state["last_command"]       = cmd
-            state["last_command_time"]  = datetime.now()
+            state["last_command"]        = actual_cmd
+            state["last_command_time"]   = datetime.now()
 
         except discord.Forbidden:
             state["last_error"] = "No permission in channel"
-            log_activity("No permission!", "warn")
+            log_activity("No permission in channel!", "warn")
             await asyncio.sleep(120)
         except discord.HTTPException as e:
             if e.status == 429:
                 retry = float(getattr(e, "retry_after", 15))
-                log_activity(f"HTTP 429: wait {retry:.0f}s", "warn")
-                state["_cmd_cooldowns"]["__global__"] = time.time() + retry + 10
-                await asyncio.sleep(retry + random.uniform(5, 12))
+                log_activity(f"HTTP 429 — {retry:.0f}s wait", "warn")
+                state["_cooldowns"]["__global__"] = time.time() + retry + 12
+                await asyncio.sleep(retry + 15)
             else:
                 state["last_error"] = f"HTTP {e.status}"
                 await asyncio.sleep(15)
         except Exception as e:
             state["last_error"] = str(e)
-            log_activity(f"Send error: {e}", "warn")
+            log_activity(f"Send err: {e}", "warn")
             await asyncio.sleep(10)
 
-        # Wait full cooldown + ±20% jitter before next send
+        # Cooldown + ±20% jitter
         jitter = random.uniform(-delay * 0.18, delay * 0.22)
         await asyncio.sleep(max(15, delay + jitter))
 
@@ -405,60 +463,56 @@ async def farm_command(channel, cmd_info):
         break_counter += 1
         if break_counter >= random.randint(85, 140):
             break_counter = 0
-            dur = random.randint(90, 320)
+            dur = random.randint(90, 360)
             state["paused"]       = True
             state["pause_reason"] = f"Human break {dur//60}m {dur%60}s"
-            log_activity(f"Taking {dur}s break", "info")
+            log_activity(f"Human break: {dur}s", "info")
             await asyncio.sleep(dur)
             state["paused"]       = False
             state["pause_reason"] = ""
             log_activity("Break over, resuming", "info")
 
-# ─── Startup: check team first ────────────────────────────────────────────────
-async def startup_routine(channel, client):
+# ─── Startup ──────────────────────────────────────────────────────────────────
+async def startup(channel, client):
     await asyncio.sleep(8)
     log_activity("Startup: checking battle team...", "info")
     try:
-        await smart_send(channel, "owo team", skip_gap=True)
-        # Wait a few seconds for OWO to respond
+        await smart_send(channel, "owo team")
         await asyncio.sleep(5)
     except Exception:
         pass
-
-    # If team still not confirmed, start creation
     if not state["team_ready"]:
-        log_activity("No team confirmed — auto-creating...", "info")
-        await try_create_team(channel)
+        log_activity("No team found — auto-creating...", "info")
+        await auto_create_team(channel)
 
-# ─── Bot ─────────────────────────────────────────────────────────────────────
+# ─── Periodic weapon equip (every 3h) ────────────────────────────────────────
+async def periodic_weapon_equip(channel):
+    await asyncio.sleep(600)   # wait 10 min after start
+    while True:
+        if state["team_animals"] and not state["_equipping"]:
+            await auto_equip_weapons(channel)
+        await asyncio.sleep(10800 + random.randint(-600, 600))  # ~3h
+
+# ─── Bot core ─────────────────────────────────────────────────────────────────
 def run_bot():
     global send_lock, last_sent_at
-
     while True:
         bot_restart_event.clear()
-
         token  = state["token"]
         ch_str = CHANNEL_ID_STR
 
         if not token:
-            state["status"] = "waiting"
-            bot_restart_event.wait(timeout=5)
-            continue
+            state["status"] = "waiting"; bot_restart_event.wait(timeout=5); continue
         if not ch_str:
-            state["status"]     = "no_channel"
-            state["last_error"] = "No channel ID set"
-            bot_restart_event.wait(timeout=5)
-            continue
+            state["status"] = "no_channel"; state["last_error"] = "No channel ID set"
+            bot_restart_event.wait(timeout=5); continue
         try:
             channel_id = int(ch_str)
         except ValueError:
-            state["status"]     = "error"
-            state["last_error"] = "Channel ID must be a number"
-            bot_restart_event.wait(timeout=30)
-            continue
+            state["status"] = "error"; state["last_error"] = "Channel ID must be a number"
+            bot_restart_event.wait(timeout=30); continue
 
-        state["status"]     = "connecting"
-        state["last_error"] = ""
+        state["status"] = "connecting"; state["last_error"] = ""
         client = discord.Client()
 
         @client.event
@@ -472,12 +526,11 @@ def run_bot():
                 "start_time": datetime.now(), "last_error": "",
                 "command_stats": {}, "real_cowony": 0, "real_events": [],
                 "total_commands": 0, "lootboxes_opened": 0,
-                "quests_completed": 0, "animals_caught": 0,
-                "activity_log": [], "team_ready": False,
-                "battle_streak": 0, "battles_won": 0, "total_xp": 0,
-                "team_animals": [], "_cmd_cooldowns": {},
-                "_team_creating": False, "_team_try_idx": 0,
-                "_last_team_add_success": False,
+                "quests_completed": 0, "animals_caught": 0, "activity_log": [],
+                "team_ready": False, "battle_streak": 0, "battles_won": 0,
+                "battles_lost": 0, "total_xp": 0, "team_animals": [],
+                "weapons_equipped": 0, "_cooldowns": {},
+                "_team_creating": False, "_team_add_ok": False, "_equipping": False,
             })
 
             log_activity(f"Online as {client.user}", "info")
@@ -498,8 +551,8 @@ def run_bot():
             state["channel_id"]   = str(channel_id)
             log_activity(f"Farming in #{state['channel_name']}", "info")
 
-            # Run startup check then start all command loops
-            client.loop.create_task(startup_routine(channel, client))
+            client.loop.create_task(startup(channel, client))
+            client.loop.create_task(periodic_weapon_equip(channel))
             for cmd_info in COMMANDS:
                 client.loop.create_task(farm_command(channel, cmd_info))
 
@@ -526,14 +579,11 @@ def run_bot():
         try:
             client.run(token, reconnect=True)
         except discord.LoginFailure:
-            state["status"]     = "error"
-            state["last_error"] = "Invalid token — please login again"
-            state["token"]      = ""
-            bot_restart_event.wait(timeout=5)
+            state["status"] = "error"; state["last_error"] = "Invalid token"
+            state["token"]  = ""; bot_restart_event.wait(timeout=5)
         except Exception as e:
-            state["status"]     = "error"
-            state["last_error"] = str(e)
-            log_activity(f"Bot error: {e}", "warn")
+            state["status"] = "error"; state["last_error"] = str(e)
+            log_activity(f"Bot crashed: {e}", "warn")
             bot_restart_event.wait(timeout=8)
         time.sleep(3)
 
@@ -562,9 +612,8 @@ def api_login():
 
 @app.route("/api/mfa", methods=["POST"])
 def api_mfa():
-    d      = request.get_json()
-    code   = (d.get("code") or "").strip()
-    ticket = session.get("mfa_ticket")
+    d = request.get_json()
+    code, ticket = (d.get("code") or "").strip(), session.get("mfa_ticket")
     if not ticket: return jsonify({"error": "Session expired"}), 400
     token, err = discord_mfa(ticket, code)
     if token:
@@ -589,21 +638,18 @@ def api_set_channel():
 @app.route("/api/stats")
 def stats():
     d = dict(state)
-    d["daily_target"] = DAILY_TARGET
-    d["channel_id_set"] = bool(CHANNEL_ID_STR)
+    d["daily_target"]    = DAILY_TARGET
+    d["channel_id_set"]  = bool(CHANNEL_ID_STR)
     if state["start_time"]:
         elapsed = (datetime.now() - state["start_time"]).total_seconds()
         d["uptime_seconds"] = int(elapsed)
-        hours = max(elapsed / 3600, 0.001)
-        d["daily_rate"]  = int(state["real_cowony"] / hours * 24)
-        d["start_time"]  = state["start_time"].strftime("%Y-%m-%d %H:%M:%S")
+        d["daily_rate"]     = int(state["real_cowony"] / max(elapsed / 3600, 0.001) * 24)
+        d["start_time"]     = state["start_time"].strftime("%Y-%m-%d %H:%M:%S")
     else:
         d["uptime_seconds"] = 0; d["daily_rate"] = 0; d["start_time"] = None
-    if state["last_command_time"]:
-        d["last_command_time"] = state["last_command_time"].strftime("%H:%M:%S")
-    else:
-        d["last_command_time"] = "—"
-    for k in ("token", "_cmd_cooldowns", "_team_creating", "_team_try_idx"):
+    d["last_command_time"] = (state["last_command_time"].strftime("%H:%M:%S")
+                               if state["last_command_time"] else "—")
+    for k in ("token", "_cooldowns", "_team_creating", "_team_add_ok", "_equipping"):
         d.pop(k, None)
     return jsonify(d)
 
@@ -611,14 +657,15 @@ def stats():
 def ping():
     return "PONG", 200
 
+# ─── Discord auth ─────────────────────────────────────────────────────────────
 DISCORD_API = "https://discord.com/api/v9"
-HEADERS_H   = {"Content-Type": "application/json",
+REQ_HDR     = {"Content-Type": "application/json",
                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
 
-def discord_login(email, password):
+def discord_login(email, pw):
     try:
-        r = requests.post(f"{DISCORD_API}/auth/login", headers=HEADERS_H,
-                          json={"login": email, "password": password, "undelete": False, "captcha_key": None}, timeout=15)
+        r = requests.post(f"{DISCORD_API}/auth/login", headers=REQ_HDR,
+                          json={"login": email, "password": pw, "undelete": False, "captcha_key": None}, timeout=15)
         d = r.json()
         if "token" in d: return d["token"], None, None
         if d.get("mfa"):  return None, d.get("ticket"), "2fa"
@@ -628,7 +675,7 @@ def discord_login(email, password):
 
 def discord_mfa(ticket, code):
     try:
-        r = requests.post(f"{DISCORD_API}/auth/mfa/totp", headers=HEADERS_H,
+        r = requests.post(f"{DISCORD_API}/auth/mfa/totp", headers=REQ_HDR,
                           json={"code": code.replace(" ", ""), "ticket": ticket}, timeout=15)
         d = r.json()
         if "token" in d: return d["token"], None
