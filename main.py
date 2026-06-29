@@ -43,6 +43,7 @@ state = {
     "last_command_time":None,
     "paused":           False,
     "pause_reason":     "",
+    "manual_resume_required": False,
     "lootboxes_opened": 0,
     "quests_completed": 0,
     "animals_caught":   0,
@@ -81,23 +82,22 @@ TEAM_ANIMALS = [
 ]
 
 # ─── Commands ─────────────────────────────────────────────────────────────────
-# hunt + battle = core XP+cowony loop (run most frequently)
-# gambling uses RANDOM amounts (set at send time) for human-like behavior
+# Only daily, pray, and random gambling are active.
+# Gambling uses random amounts and random timing.
 COMMANDS = [
-    {"cmd": "owo hunt",       "delay": 65,     "name": "Hunt"},
-    {"cmd": "owo battle",     "delay": 68,     "name": "Battle"},
-    {"cmd": "owo fish",       "delay": 72,     "name": "Fish"},
-    {"cmd": "owo pray",       "delay": 305,    "name": "Pray"},
-    {"cmd": "owo curse",      "delay": 310,    "name": "Curse"},
-    {"cmd": "owo work",       "delay": 910,    "name": "Work"},
-    {"cmd": "owo crime",      "delay": 1810,   "name": "Crime"},
-    {"cmd": "owo lootbox",    "delay": 14410,  "name": "Lootbox"},   # try every ~4h
-    {"cmd": "owo SLOTS",      "delay": 610,    "name": "Slots"},     # amount set at send time
-    {"cmd": "owo COINFLIP",   "delay": 315,    "name": "Coinflip"},  # amount set at send time
-    {"cmd": "owo sell all",   "delay": 7210,   "name": "Sell"},
     {"cmd": "owo daily",      "delay": 43210,  "name": "Daily"},
-    {"cmd": "owo weekly",     "delay": 604815, "name": "Weekly"},
-    {"cmd": "owo checklist",  "delay": 7210,   "name": "Checklist"},
+    {"cmd": "owo pray",       "delay": 360,    "name": "Pray"},
+    {"cmd": "owo gamble",     "delay": 300,    "name": "Gambling"},
+]
+
+GAMBLE_AMOUNTS = [50, 100, 150, 200, 250, 300, 400, 500, 750, 1000, 1500, 2000]
+GAMBLE_DELAYS = [120, 180, 240]
+
+CAPTCHA_WARNING_PATTERNS = [
+    "captcha", "verification", "verify that you are human", "are you a human",
+    "are you a bot", "human verification", "complete the captcha",
+    "check your dm", "check your dms", "suspicious", "automated",
+    "automation", "script", "spam", "selfbot",
 ]
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -142,10 +142,31 @@ def team_animal_names() -> list:
     """Get current team animal emoji names for weapon equipping."""
     return [a["emoji"] for a in state.get("team_animals", [])]
 
+def pause_until_manual_start(reason: str):
+    state["paused"] = True
+    state["manual_resume_required"] = True
+    state["pause_reason"] = reason
+    state["status"] = "captcha_paused"
+    log_activity(reason, "warn")
+
+def is_owo_warning(text: str) -> bool:
+    low = text.lower()
+    return any(pattern in low for pattern in CAPTCHA_WARNING_PATTERNS)
+
+def build_gambling_command() -> str:
+    amount = random.choice(GAMBLE_AMOUNTS)
+    if random.random() < 0.5:
+        return f"owo slots {amount}"
+    side = random.choice(["heads", "tails"])
+    return f"owo coinflip {amount} {side}"
+
 # ─── Anti-detect send ─────────────────────────────────────────────────────────
 async def smart_send(channel, cmd: str):
     global send_lock, last_sent_at
     async with send_lock:
+        while state["paused"]:
+            await asyncio.sleep(5)
+
         # Enforce minimum gap between all sends
         gap = time.time() - last_sent_at
         if gap < MIN_GAP:
@@ -162,111 +183,14 @@ async def smart_send(channel, cmd: str):
         last_sent_at = time.time()
         await asyncio.sleep(random.uniform(1.5, 2.5))
 
-# ─── Team creation: try animals one by one ────────────────────────────────────
-async def auto_create_team(channel):
-    if state["_team_creating"]:
-        return
-    state["_team_creating"] = True
-    state["team_ready"]     = False
-    log_activity("Auto-creating battle team...", "info")
-
-    slots = 0
-    for animal in TEAM_ANIMALS:
-        if slots >= 3:
-            break
-        state["_team_add_ok"] = False
-
-        log_activity(f"Team slot {slots+1}: trying '{animal}'", "info")
-        try:
-            await smart_send(channel, f"owo team add {animal}")
-            await asyncio.sleep(random.uniform(6, 10))  # wait for OWO reply + avoid rate limit
-        except Exception as e:
-            log_activity(f"Team add err: {e}", "warn")
-            await asyncio.sleep(3)
-            continue
-
-        if state["_team_add_ok"]:
-            slots += 1
-            state["team_ready"] = True
-            log_activity(f"'{animal}' added! Slots: {slots}/3", "earn")
-            await asyncio.sleep(random.uniform(2, 4))
-
-    state["_team_creating"] = False
-    if state["team_ready"]:
-        log_activity(f"Battle team ready! ({slots} animals)", "earn")
-        # Immediately try to equip weapons
-        await asyncio.sleep(3)
-        await auto_equip_weapons(channel)
-    else:
-        log_activity("No animals to add — hunt/fish first to catch some!", "warn")
-
-# ─── Auto-equip weapons (interactive OWO flow) ───────────────────────────────
-async def auto_equip_weapons(channel):
-    """
-    OWO weapon equip interactive flow:
-      1. Bot sends `owo weapon equip`
-      2. OWO shows numbered weapon list → bot replies "1"
-      3. OWO asks which team slot → bot replies "1", "2", or "3"
-      4. Repeat for each team slot (up to 3 times)
-    """
-    if state["_equipping"]:
-        return
-    state["_equipping"]       = True
-    state["_weapon_channel"]  = channel
-    state["_weapon_slot"]     = 1  # start at slot 1
-
-    log_activity("Auto-equipping weapons to team...", "info")
-
-    # Run equip loop for each team slot
-    for slot in range(1, 4):
-        state["_weapon_step"] = 1           # step 1 = waiting for OWO weapon list
-        state["_weapon_slot"] = slot
-        try:
-            await smart_send(channel, "owo weapon equip")
-        except Exception as e:
-            log_activity(f"Weapon equip send err: {e}", "warn")
-            break
-        # Wait up to 20s for the full interaction to complete (steps 1→2→done)
-        for _ in range(20):
-            await asyncio.sleep(1)
-            if state["_weapon_step"] == 0:  # completed for this slot
-                break
-        if state["_weapon_step"] != 0:
-            # OWO didn't respond — no weapons in inventory, stop
-            state["_weapon_step"] = 0
-            log_activity("No weapons in inventory to equip", "info")
-            break
-        await asyncio.sleep(random.uniform(3, 6))  # pause between slots
-
-    state["_equipping"]      = False
-    state["_weapon_channel"] = None
-
-# ─── Auto open lootbox / crate ────────────────────────────────────────────────
-async def auto_open_lootbox(channel):
-    await asyncio.sleep(random.uniform(4, 8))
-    log_activity("Lootbox → opening!", "earn")
-    try:
-        await smart_send(channel, "owo lootbox")
-        state["lootboxes_opened"] += 1
-        await asyncio.sleep(4)
-        await auto_equip_weapons(channel)  # equip any new weapons
-    except Exception as e:
-        log_activity(f"Lootbox err: {e}", "warn")
-
-async def auto_open_crate(channel):
-    await asyncio.sleep(random.uniform(4, 8))
-    log_activity("Weapon crate → opening!", "earn")
-    try:
-        await smart_send(channel, "owo crate")
-        await asyncio.sleep(4)
-        await auto_equip_weapons(channel)  # equip the new weapon
-    except Exception as e:
-        log_activity(f"Crate err: {e}", "warn")
-
 # ─── OWO message handler ──────────────────────────────────────────────────────
 async def handle_owo_message(message, channel, client):
     full = get_text(message)
     low  = full.lower()
+
+    if is_owo_warning(full):
+        pause_until_manual_start("OWO warning/captcha detected. Script paused until you complete it and type 'owo start'.")
+        return
 
     # ── Rate limit ────────────────────────────────────────────────────────────
     if "slow down" in low:
@@ -289,140 +213,6 @@ async def handle_owo_message(message, channel, client):
         })
         state["real_events"] = state["real_events"][:30]
         log_activity(f"+{earned:,} cowony", "earn")
-
-    # ── Battle result ─────────────────────────────────────────────────────────
-    if "goes into battle" in low:
-        xp     = parse_xp(full)
-        streak = parse_streak(full)
-        if xp > 0: state["total_xp"] += xp
-        if streak >= 0: state["battle_streak"] = streak
-
-        # Parse team animal info (level + has weapon)
-        team = []
-        for m2 in re.finditer(r'L\.\s*(\d+)\s*:(\w+):\s*-\s*(.*?)(?:\n|$)', full):
-            level   = int(m2.group(1))
-            emoji   = m2.group(2)
-            weapon  = m2.group(3).strip()
-            has_wpn = weapon != "no weapon" and bool(weapon)
-            team.append({"emoji": emoji, "level": level, "has_weapon": has_wpn})
-
-        if team:
-            # First 3 entries before the enemy team
-            sections = full.split("\n")
-            my_team = []
-            in_my   = False
-            for line in sections:
-                if "goes into battle" in line.lower():
-                    in_my = True
-                if in_my and ("enemy team" in line.lower() or "🔥" in line or "cat" in line.lower()):
-                    break
-                if in_my:
-                    for mt in team:
-                        if mt["emoji"] in line and mt not in my_team:
-                            my_team.append(mt)
-            state["team_animals"] = my_team[:3] if my_team else team[:3]
-
-        if "you won" in low or "won in" in low:
-            state["battles_won"] += 1
-            log_activity(f"Battle won! +{xp:,}xp | Streak {state['battle_streak']}", "earn")
-        elif "you lost" in low or "lost in" in low:
-            state["battles_lost"] += 1
-            log_activity(f"Battle lost. +{xp:,}xp", "info")
-            # If team has no weapons, try equipping
-            no_weapons = all(not a["has_weapon"] for a in state["team_animals"])
-            if no_weapons and not state["_equipping"]:
-                client.loop.create_task(auto_equip_weapons(channel))
-
-    # ── Detect ANY existing team members in OWO response (L.X :animal: pattern) ─
-    # This catches: owo team response, battle embed, and team add confirmation
-    level_matches = re.findall(r'L\.\s*(\d+)\s*:(\w+):', full)
-    if level_matches and not state["team_ready"]:
-        state["team_ready"]     = True
-        state["_team_add_ok"]   = True
-        state["_team_creating"] = False
-        log_activity("Team detected from OWO response!", "earn")
-
-    # ── Team add success phrases ──────────────────────────────────────────────
-    team_success_phrases = [
-        "added", "successfully", "joined your team",
-        "is now on your team", "battle team", "team member",
-    ]
-    if any(p in low for p in team_success_phrases) and "team" in low:
-        state["_team_add_ok"] = True
-        state["team_ready"]   = True
-        if not level_matches:
-            log_activity("Animal added to team!", "earn")
-
-    # ── Already in team / full ────────────────────────────────────────────────
-    if "team is full" in low or "already on your team" in low or "already in your team" in low:
-        state["_team_add_ok"] = True
-        state["team_ready"]   = True
-        state["_team_creating"] = False
-        log_activity("Team already exists / is full!", "earn")
-
-    # ── Animal not found — silently move to next in loop ──────────────────────
-    if "could not find this animal" in low or "do not own this animal" in low:
-        state["_team_add_ok"] = False  # try_create_team loop moves to next animal
-
-    # ── No battle team error ───────────────────────────────────────────────────
-    if "do not have an active battle team" in low:
-        log_activity("No battle team! Auto-creating...", "warn")
-        state["team_ready"] = False
-        if not state["_team_creating"]:
-            client.loop.create_task(auto_create_team(channel))
-
-    # ── Weapon equip interactive flow ─────────────────────────────────────────
-    # Step 1: OWO shows numbered weapon list → reply "1" to pick first weapon
-    if state["_weapon_step"] == 1:
-        weapon_list = (
-            re.search(r'1\.\s*\*{0,2}.{1,40}\*{0,2}', full) or  # "1. SwordName"
-            "select" in low or "choose" in low or
-            ("1." in full and ("weapon" in low or "equip" in low or "inventory" in low))
-        )
-        if weapon_list:
-            state["_weapon_step"] = 2
-            ch = state.get("_weapon_channel")
-            if ch:
-                await asyncio.sleep(random.uniform(1.5, 3.0))
-                await ch.send("1")
-                log_activity("Weapon equip: picked weapon #1", "info")
-
-    # Step 2: OWO asks which team slot → reply with slot number
-    elif state["_weapon_step"] == 2:
-        slot_prompt = (
-            "which team member" in low or "which slot" in low or
-            "which animal" in low or "pick a slot" in low or
-            "team slot" in low or ("1." in full and "2." in full and "team" in low)
-        )
-        if slot_prompt:
-            slot = state.get("_weapon_slot", 1)
-            ch   = state.get("_weapon_channel")
-            if ch:
-                await asyncio.sleep(random.uniform(1.5, 3.0))
-                await ch.send(str(slot))
-                log_activity(f"Weapon equip: picked slot {slot}", "info")
-            state["_weapon_step"] = 0  # done for this slot
-
-    # ── Weapon equipped confirmation ────────────────────────────────────────────
-    if "equipped" in low and ("weapon" in low or "sword" in low or "staff" in low
-                               or "bow" in low or "wand" in low or "gun" in low):
-        state["weapons_equipped"] += 1
-        state["_weapon_step"] = 0   # ensure state resets on any equip confirm
-        log_activity("✅ Weapon equipped on team animal!", "earn")
-
-    # ── Hunt result ───────────────────────────────────────────────────────────
-    if "spent" in low and "caught" in low:
-        xp = parse_xp(full)
-        if xp > 0: state["total_xp"] += xp
-        state["animals_caught"] += 1
-
-    # ── Lootbox found → open immediately ─────────────────────────────────────
-    if "you found a lootbox" in low:
-        client.loop.create_task(auto_open_lootbox(channel))
-
-    # ── Weapon/loot crate ─────────────────────────────────────────────────────
-    if "weapon crate" in low or "loot crate" in low:
-        client.loop.create_task(auto_open_crate(channel))
 
     # ── Level up ──────────────────────────────────────────────────────────────
     if "leveled up" in low:
@@ -448,10 +238,6 @@ async def farm_command(channel, cmd_info):
     idx = COMMANDS.index(cmd_info)
     await asyncio.sleep(random.uniform(idx * 10 + 8, idx * 15 + 35))
 
-    # Battle waits extra for team setup
-    if name == "Battle":
-        await asyncio.sleep(45)
-
     break_counter = 0
 
     while True:
@@ -476,15 +262,10 @@ async def farm_command(channel, cmd_info):
             await asyncio.sleep(delay * random.uniform(0.5, 0.9))
             continue
 
-        # Build actual command (gambling uses random amounts)
+        # Build actual command (gambling uses random command, amount, and side)
         actual_cmd = cmd
-        if name == "Slots":
-            amt = random.choice([100, 200, 300, 500, 600, 800, 1000])
-            actual_cmd = f"owo slots {amt}"
-        elif name == "Coinflip":
-            amt  = random.choice([100, 200, 250, 500, 750, 1000])
-            side = random.choice(["heads", "tails"])
-            actual_cmd = f"owo coinflip {amt} {side}"
+        if name == "Gambling":
+            actual_cmd = build_gambling_command()
 
         try:
             await smart_send(channel, actual_cmd)
@@ -511,43 +292,31 @@ async def farm_command(channel, cmd_info):
             log_activity(f"Send err: {e}", "warn")
             await asyncio.sleep(10)
 
-        # Cooldown + ±20% jitter
-        jitter = random.uniform(-delay * 0.18, delay * 0.22)
-        await asyncio.sleep(max(15, delay + jitter))
+        # Gambling waits randomly 2, 3, or 4 minutes. Other commands use jitter.
+        if name == "Gambling":
+            await asyncio.sleep(random.choice(GAMBLE_DELAYS))
+        else:
+            jitter = random.uniform(-delay * 0.18, delay * 0.22)
+            await asyncio.sleep(max(15, delay + jitter))
 
-        # Human break every ~90 min
+        # Human break every ~90 min, except manual warning pauses
         break_counter += 1
-        if break_counter >= random.randint(85, 140):
+        if not state["manual_resume_required"] and break_counter >= random.randint(85, 140):
             break_counter = 0
             dur = random.randint(90, 360)
             state["paused"]       = True
             state["pause_reason"] = f"Human break {dur//60}m {dur%60}s"
             log_activity(f"Human break: {dur}s", "info")
             await asyncio.sleep(dur)
-            state["paused"]       = False
-            state["pause_reason"] = ""
-            log_activity("Break over, resuming", "info")
+            if not state["manual_resume_required"]:
+                state["paused"]       = False
+                state["pause_reason"] = ""
+                log_activity("Break over, resuming", "info")
 
 # ─── Startup ──────────────────────────────────────────────────────────────────
 async def startup(channel, client):
     await asyncio.sleep(8)
-    log_activity("Startup: checking battle team...", "info")
-    try:
-        await smart_send(channel, "owo team")
-        await asyncio.sleep(5)
-    except Exception:
-        pass
-    if not state["team_ready"]:
-        log_activity("No team found — auto-creating...", "info")
-        await auto_create_team(channel)
-
-# ─── Periodic weapon equip (every 3h) ────────────────────────────────────────
-async def periodic_weapon_equip(channel):
-    await asyncio.sleep(600)   # wait 10 min after start
-    while True:
-        if state["team_animals"] and not state["_equipping"]:
-            await auto_equip_weapons(channel)
-        await asyncio.sleep(10800 + random.randint(-600, 600))  # ~3h
+    log_activity("Startup: only daily, pray, and gambling enabled", "info")
 
 # ─── Bot core ─────────────────────────────────────────────────────────────────
 def run_bot():
@@ -578,8 +347,12 @@ def run_bot():
             last_sent_at = 0.0
 
             state.update({
-                "logged_in_as": str(client.user), "status": "online",
+                "logged_in_as": str(client.user),
+                "status": "captcha_paused" if state.get("manual_resume_required") else "online",
                 "start_time": datetime.now(), "last_error": "",
+                "paused": bool(state.get("manual_resume_required")),
+                "pause_reason": state.get("pause_reason", "") if state.get("manual_resume_required") else "",
+                "manual_resume_required": state.get("manual_resume_required", False),
                 "command_stats": {}, "real_cowony": 0, "real_events": [],
                 "total_commands": 0, "lootboxes_opened": 0,
                 "quests_completed": 0, "animals_caught": 0, "activity_log": [],
@@ -609,7 +382,6 @@ def run_bot():
             log_activity(f"Farming in #{state['channel_name']}", "info")
 
             client.loop.create_task(startup(channel, client))
-            client.loop.create_task(periodic_weapon_equip(channel))
             for cmd_info in COMMANDS:
                 client.loop.create_task(farm_command(channel, cmd_info))
 
@@ -623,6 +395,17 @@ def run_bot():
         async def on_message(message):
             if not state.get("channel_id"): return
             if message.channel.id != channel_id: return
+
+            content = (message.content or "").strip().lower()
+            if message.author.id == client.user.id and content == "owo start":
+                if state.get("manual_resume_required"):
+                    state["paused"] = False
+                    state["manual_resume_required"] = False
+                    state["pause_reason"] = ""
+                    state["status"] = "online"
+                    log_activity("Manual resume received from 'owo start'.", "earn")
+                return
+
             is_owo = (message.author.id == OWO_BOT_ID or
                       message.author.name.lower() in ("owo", "owospace"))
             if not is_owo: return

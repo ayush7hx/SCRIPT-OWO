@@ -112,18 +112,18 @@
 
 <header>
   <h1>OWO Auto-Farmer</h1>
-  <p>24/7 Hunt · Battle · Weapons · Lootbox · Anti-Detect · Real Tracking</p>
+  <p>Daily · Pray every 6 min · Random Gambling · Manual captcha pause</p>
 </header>
 
 <div class="srow">
   <div class="pill"><div class="dot" id="dot"></div><span id="stext">Loading…</span></div>
-  <div class="pill"><div class="dot" id="tdot"></div><span id="tlabel">Team: —</span></div>
-  <div class="pill gold"><span>🔥</span><span id="streak-pill">Streak: 0</span></div>
-  <div class="pill blue"><span>⚔️</span><span id="wpn-pill">Weapons: 0</span></div>
-  <div class="pill"><div class="dot on"></div>Anti-Detect ON</div>
+  <div class="pill"><div class="dot on" id="tdot"></div><span id="tlabel">Mode: Daily/Pray/Gamble</span></div>
+  <div class="pill gold"><span id="streak-pill">Pray: 6 min</span></div>
+  <div class="pill blue"><span id="wpn-pill">Captcha pause ON</span></div>
+  <div class="pill"><div class="dot on"></div>Manual Resume ON</div>
 </div>
 
-<div class="pbanner" id="pb"><h3>⏸ Human Break</h3><p id="preason"></p></div>
+<div class="pbanner" id="pb"><h3>Paused</h3><p id="preason"></p></div>
 <div class="ebanner" id="eb"><h3>⚠ Error</h3><p id="emsg"></p></div>
 
 <!-- Daily target -->
@@ -144,38 +144,37 @@
 <div class="g g5">
   <div class="card"><div class="lbl">Real Cowony</div><div class="val green" id="s-cowony">0</div><div class="sub">tracked from OWO</div></div>
   <div class="card"><div class="lbl">Daily Rate</div><div class="val gold" id="s-rate">0</div><div class="sub">cowony/day</div></div>
-  <div class="card"><div class="lbl">Total XP</div><div class="val purple" id="s-xp">0</div><div class="sub">hunt+battle</div></div>
-  <div class="card"><div class="lbl">Battles Won</div><div class="val green" id="s-won">0</div><div class="sub" id="s-lost-sub">0 lost</div></div>
+  <div class="card"><div class="lbl">Commands Sent</div><div class="val purple" id="s-xp">0</div><div class="sub">daily/pray/gamble</div></div>
+  <div class="card"><div class="lbl">Gambling Runs</div><div class="val green" id="s-won">0</div><div class="sub" id="s-lost-sub">random slots/coinflip</div></div>
   <div class="card"><div class="lbl">Uptime</div><div class="val blue" id="s-uptime">—</div><div class="sub">hh:mm:ss</div></div>
 </div>
 
-<!-- Battle + smart stats -->
+<!-- Command stats -->
 <div class="g g4">
   <div class="card">
-    <div class="lbl">Battle Streak</div>
+    <div class="lbl">Daily Runs</div>
     <div style="margin-top:4px;display:flex;align-items:center;gap:8px">
       <span style="font-size:1.4rem;font-weight:800;color:#e3b341" id="s-streak">0</span>
-      <span style="font-size:1.1rem">🔥</span>
     </div>
-    <div class="sub">win streak</div>
+    <div class="sub">owo daily</div>
   </div>
-  <div class="card"><div class="lbl">Weapons Equipped</div><div class="val" id="s-wpn" style="color:#58a6ff">0</div><div class="sub">auto-equipped</div></div>
-  <div class="card"><div class="lbl">Animals Caught</div><div class="val green" id="s-animals">0</div><div class="sub">hunt+fish</div></div>
-  <div class="card"><div class="lbl">Lootboxes</div><div class="val gold" id="s-loot">0</div><div class="sub">auto-opened</div></div>
+  <div class="card"><div class="lbl">Pray Runs</div><div class="val" id="s-wpn" style="color:#58a6ff">0</div><div class="sub">every 6 min</div></div>
+  <div class="card"><div class="lbl">Paused</div><div class="val green" id="s-animals">No</div><div class="sub">captcha/manual</div></div>
+  <div class="card"><div class="lbl">Last Command</div><div class="val gold" id="s-loot" style="font-size:.9rem">—</div><div class="sub">latest send</div></div>
 </div>
 
-<!-- Battle team panel -->
+<!-- Active command panel -->
 <div class="w">
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px">
       <div>
-        <div class="lbl">Battle Team</div>
-        <div style="font-size:.8rem;color:#6e7681;margin-top:1px">Auto-created · Auto weapon equip after crate/lootbox · Every 3h periodic equip</div>
+        <div class="lbl">Active Commands</div>
+        <div style="font-size:.8rem;color:#6e7681;margin-top:1px">Only owo daily, owo pray, owo slots, and owo coinflip can be sent.</div>
       </div>
-      <div id="team-badge" style="font-size:.74rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#1a0e2d;color:#bc8cff;border:1px solid #bc8cff44">⟳ Setting up…</div>
+      <div id="team-badge" style="font-size:.74rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#0f2d1a;color:#3fb950;border:1px solid #3fb95044">Limited mode</div>
     </div>
     <div class="team-wrap" id="team-panel">
-      <div style="color:#484f58;font-size:.8rem;padding:6px 0">Bot is auto-creating team from your animals…</div>
+      <div style="color:#8b949e;font-size:.8rem;padding:6px 0">Zoo, hunt, fish, battle, team, weapons, lootbox, work, crime, sell, weekly, checklist, curse are disabled.</div>
     </div>
   </div>
 </div>
@@ -189,15 +188,14 @@
     <div class="ii"><span class="il">Last sent:</span><span class="iv" id="i-last">—</span></div>
     <button class="lo" onclick="doLogout()">Logout</button>
     <div class="adr">
-      <span class="badge bg">✓ Typing Sim</span>
-      <span class="badge bg">✓ ±20% Jitter</span>
-      <span class="badge bg">✓ Human Breaks</span>
+      <span class="badge bg">✓ Daily</span>
+      <span class="badge bg">✓ Pray 6m</span>
+      <span class="badge bg">✓ Random Gambling</span>
       <span class="badge bg">✓ 5s Min Gap</span>
       <span class="badge bg">✓ Rate-Limit Aware</span>
-      <span class="badge bp" id="b-team">⟳ Auto Team</span>
-      <span class="badge bp">✓ Auto Weapon Equip</span>
-      <span class="badge bp">✓ Auto Lootbox/Crate</span>
-      <span class="badge bp">✓ Variable Gambling</span>
+      <span class="badge bp" id="b-team">✓ No Battle/Zoo</span>
+      <span class="badge bp">✓ Captcha Warning Pause</span>
+      <span class="badge bp">✓ Resume with owo start</span>
       <span class="badge bp">✓ Real Cowony Track</span>
     </div>
   </div>
@@ -230,32 +228,22 @@
   </div>
 </div>
 
-<footer>Auto-refresh 3s · Real data from OWO · Anti-detect active · Weapons auto-equipped</footer>
+<footer>Auto-refresh 10s · Real data from OWO · Manual captcha pause active</footer>
 
 <script>
 const META = {
-  Hunt:     {t:'tbg',cd:'~1 min',c:'#3fb950'},
-  Battle:   {t:'tbp',cd:'~1 min',c:'#bc8cff'},
-  Fish:     {t:'tbg',cd:'~1 min',c:'#58a6ff'},
-  Pray:     {t:'tbg',cd:'5 min', c:'#3fb950'},
-  Curse:    {t:'tbg',cd:'5 min', c:'#3fb950'},
-  Work:     {t:'tbg',cd:'15 min',c:'#3fb950'},
-  Crime:    {t:'tbg',cd:'30 min',c:'#3fb950'},
-  Lootbox:  {t:'tbb',cd:'~4 hrs',c:'#e3b341'},
-  Slots:    {t:'tbp',cd:'10 min',c:'#bc8cff'},
-  Coinflip: {t:'tbp',cd:'5 min', c:'#bc8cff'},
-  Sell:     {t:'tbs',cd:'2 hrs', c:'#6e7681'},
+  Gambling: {t:'tbp',cd:'2/3/4 min',c:'#bc8cff'},
+  Pray:     {t:'tbg',cd:'6 min', c:'#3fb950'},
   Daily:    {t:'tbb',cd:'12 hrs',c:'#e3b341'},
-  Weekly:   {t:'tbb',cd:'7 days',c:'#e3b341'},
-  Checklist:{t:'tbb',cd:'2 hrs', c:'#e3b341'},
 };
-const CAT={'tbg':'GRIND','tbp':'GAMBLE/FIGHT','tbb':'BONUS','tbs':'SELL'};
+const CAT={'tbg':'PRAY','tbp':'GAMBLE','tbb':'BONUS','tbs':'CMD'};
 const ST={
   online:      {c:'on',  l:'Online — Farming Active'},
   connecting:  {c:'pend',l:'Connecting…'},
   reconnecting:{c:'pend',l:'Reconnecting…'},
   waiting:     {c:'pend',l:'Waiting for login…'},
   no_channel:  {c:'pend',l:'Channel ID needed'},
+  captcha_paused:{c:'err', l:'Paused for captcha/warning'},
   error:       {c:'err', l:'Error'},
 };
 const EMOJI={
@@ -281,18 +269,16 @@ async function refresh(){
   document.getElementById('dot').className='dot '+c;
   document.getElementById('stext').textContent=l;
 
-  // team
+  // active mode
   const tb=document.getElementById('team-badge'),tl=document.getElementById('tlabel'),bt=document.getElementById('b-team');
   const tdot=document.getElementById('tdot');
-  if(d.team_ready){
-    tb.textContent='✓ Team Active'; tb.style.cssText='font-size:.74rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#0f2d1a;color:#3fb950;border:1px solid #3fb95044';
-    tl.textContent='Team: Ready ✓'; tdot.className='dot on'; bt.textContent='✓ Auto Team Created';
-  }else{
-    tb.textContent='⟳ Setting up…'; tb.style.cssText='font-size:.74rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#1a0e2d;color:#bc8cff;border:1px solid #bc8cff44';
-    tl.textContent='Team: Building…'; tdot.className='dot pend'; bt.textContent='⟳ Auto Team';
-  }
-  document.getElementById('streak-pill').textContent='Streak: '+(d.battle_streak||0);
-  document.getElementById('wpn-pill').textContent='Weapons: '+(d.weapons_equipped||0);
+  tb.textContent='Limited mode';
+  tb.style.cssText='font-size:.74rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#0f2d1a;color:#3fb950;border:1px solid #3fb95044';
+  tl.textContent='Mode: Daily/Pray/Gamble';
+  tdot.className='dot on';
+  bt.textContent='✓ No Battle/Zoo';
+  document.getElementById('streak-pill').textContent='Pray: 6 min';
+  document.getElementById('wpn-pill').textContent='Captcha pause ON';
 
   // channel modal
   if(!d.channel_id_set&&!chShown&&d.status!=='waiting'){
@@ -318,13 +304,14 @@ async function refresh(){
   // stats
   document.getElementById('s-cowony').textContent=fmt(real);
   document.getElementById('s-rate').textContent=fmt(rate);
-  document.getElementById('s-xp').textContent=fmt(d.total_xp);
-  document.getElementById('s-won').textContent=fmt(d.battles_won);
-  document.getElementById('s-lost-sub').textContent=fmt(d.battles_lost)+' lost';
-  document.getElementById('s-streak').textContent=d.battle_streak||0;
-  document.getElementById('s-wpn').textContent=fmt(d.weapons_equipped);
-  document.getElementById('s-animals').textContent=fmt(d.animals_caught);
-  document.getElementById('s-loot').textContent=fmt(d.lootboxes_opened);
+  const stats=d.command_stats||{};
+  document.getElementById('s-xp').textContent=fmt(d.total_commands);
+  document.getElementById('s-won').textContent=fmt(stats.Gambling||0);
+  document.getElementById('s-lost-sub').textContent='random slots/coinflip';
+  document.getElementById('s-streak').textContent=fmt(stats.Daily||0);
+  document.getElementById('s-wpn').textContent=fmt(stats.Pray||0);
+  document.getElementById('s-animals').textContent=d.paused?'Yes':'No';
+  document.getElementById('s-loot').textContent=d.last_command||'—';
   document.getElementById('s-uptime').textContent=fmtT(d.uptime_seconds);
 
   // info bar
@@ -333,19 +320,8 @@ async function refresh(){
   document.getElementById('i-cmds').textContent=fmt(d.total_commands);
   document.getElementById('i-last').textContent=d.last_command_time||'—';
 
-  // team panel
-  const animals=d.team_animals||[],panel=document.getElementById('team-panel');
-  if(!animals.length){
-    panel.innerHTML=`<div style="color:#484f58;font-size:.8rem;padding:6px 0">${d.team_ready?'Team active (will show animals after next battle)':'Creating team from your caught animals…'}</div>`;
-  }else{
-    panel.innerHTML=animals.map(a=>{
-      const em=EMOJI[a.emoji]||'🐾';
-      const wpnHtml=a.has_weapon
-        ?`<span class="wpn-badge">⚔️</span>`
-        :`<span class="no-wpn">no wpn</span>`;
-      return`<div class="ac">${wpnHtml}<div class="ac-emoji">${em}</div><div class="ac-level">L.${a.level}</div><div class="ac-name">${a.emoji}</div></div>`;
-    }).join('');
-  }
+  // command panel
+  document.getElementById('team-panel').innerHTML='<div style="color:#8b949e;font-size:.8rem;padding:6px 0">Zoo, hunt, fish, battle, team, weapons, lootbox, work, crime, sell, weekly, checklist, curse are disabled.</div>';
 
   // activity log
   const acts=d.activity_log||[];
@@ -360,7 +336,7 @@ async function refresh(){
     :'<div style="color:#484f58;text-align:center;padding:20px;font-size:.8rem">No cowony events yet…</div>';
 
   // command table
-  const stats=d.command_stats||{},keys=Object.keys(stats);
+  const keys=Object.keys(stats);
   const maxV=keys.length?Math.max(...keys.map(k=>stats[k])):1;
   const tb2=document.getElementById('ctbody');
   if(!keys.length){
