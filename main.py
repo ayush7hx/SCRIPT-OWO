@@ -85,13 +85,13 @@ TEAM_ANIMALS = [
 # Only daily, pray, and random gambling are active.
 # Gambling uses random amounts and random timing.
 COMMANDS = [
-    {"cmd": "owo daily",      "delay": 43210,  "name": "Daily"},
+    {"cmd": "owo daily",      "delay": 46800,  "name": "Daily"},
     {"cmd": "owo pray",       "delay": 360,    "name": "Pray"},
     {"cmd": "owo gamble",     "delay": 300,    "name": "Gambling"},
 ]
 
 GAMBLE_AMOUNTS = [50, 100, 150, 200, 250, 300, 400, 500, 750, 1000, 1500, 2000]
-GAMBLE_DELAYS = [120, 180, 240]
+GAMBLE_DELAYS = [180, 240, 300]
 
 CAPTCHA_WARNING_PATTERNS = [
     "captcha", "verification", "verify that you are human", "are you a human",
@@ -292,7 +292,7 @@ async def farm_command(channel, cmd_info):
             log_activity(f"Send err: {e}", "warn")
             await asyncio.sleep(10)
 
-        # Gambling waits randomly 2, 3, or 4 minutes. Other commands use jitter.
+        # Gambling waits randomly 3, 4, or 5 minutes. Other commands use jitter.
         if name == "Gambling":
             await asyncio.sleep(random.choice(GAMBLE_DELAYS))
         else:
