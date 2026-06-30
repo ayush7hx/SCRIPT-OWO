@@ -63,35 +63,19 @@ last_sent_at      = 0.0
 MIN_GAP           = 5.0          # minimum seconds between any two commands
 bot_restart_event = threading.Event()
 
-# ─── Common animals — tried first (what most players catch via hunt/fish) ─────
-TEAM_ANIMALS = [
-    # Try both base names AND "2" variants (OWO uses :rabbit2:, :mouse2:, :cat2: etc.)
-    "chipmunk",
-    "rabbit","rabbit2",
-    "mouse","mouse2",
-    "cat","cat2",
-    "dog","dog2",
-    "pig","pig2",
-    "bee","butterfly","snail","beetle","bug","baby_chick","chick",
-    "rooster","sheep","duck","frog","cow","cow2","horse","hamster",
-    "parrot","otter","penguin","panda",
-    "fox","bear","wolf","deer","shrimp","lion","tiger","tiger2",
-    "monkey","eagle","owl","camel","crocodile","shark",
-    "whale","whale2","dolphin","turtle","elephant","giraffe","zebra","gorilla",
-    "gfox","gshrimp","gdeer","gcamel","gcat","gdog","gbear",
-]
-
 # ─── Commands ─────────────────────────────────────────────────────────────────
-# Only daily, pray, and random gambling are active.
-# Gambling uses random amounts and random timing.
+# pray every 5.1 min · hunt/battle/create every 4–5 min · daily every 13 hr
 COMMANDS = [
-    {"cmd": "owo daily",      "delay": 46800,  "name": "Daily"},
-    {"cmd": "owo pray",       "delay": 360,    "name": "Pray"},
-    {"cmd": "owo gamble",     "delay": 300,    "name": "Gambling"},
+    {"cmd": "owo daily",  "delay": 46800, "name": "Daily"},
+    {"cmd": "owo pray",   "delay": 306,   "name": "Pray"},
+    {"cmd": "owo hunt",   "delay": 270,   "name": "Hunt"},
+    {"cmd": "owo battle", "delay": 270,   "name": "Battle"},
+    {"cmd": "owo create", "delay": 270,   "name": "Create"},
 ]
 
-GAMBLE_AMOUNTS = [50, 100, 150, 200, 250, 300, 400, 500, 750, 1000, 1500, 2000]
-GAMBLE_DELAYS = [180, 240, 300]
+ACTIVITY_DELAYS = [240, 270, 300]  # 4 / 4.5 / 5 minutes
+CREATE_ANIMALS = ["chipmunk", "rabbit", "mouse", "cat", "dog", "pig", "bee", "duck"]
+_create_animal_idx = 0
 
 CAPTCHA_WARNING_PATTERNS = [
     "captcha", "verification", "verify that you are human", "are you a human",
@@ -138,10 +122,6 @@ def parse_streak(text: str) -> int:
     m = re.search(r'Streak:\s*(\d+)', text, re.I)
     return int(m.group(1)) if m else -1
 
-def team_animal_names() -> list:
-    """Get current team animal emoji names for weapon equipping."""
-    return [a["emoji"] for a in state.get("team_animals", [])]
-
 def pause_until_manual_start(reason: str):
     state["paused"] = True
     state["manual_resume_required"] = True
@@ -153,12 +133,11 @@ def is_owo_warning(text: str) -> bool:
     low = text.lower()
     return any(pattern in low for pattern in CAPTCHA_WARNING_PATTERNS)
 
-def build_gambling_command() -> str:
-    amount = random.choice(GAMBLE_AMOUNTS)
-    if random.random() < 0.5:
-        return f"owo slots {amount}"
-    side = random.choice(["heads", "tails"])
-    return f"owo coinflip {amount} {side}"
+def build_create_command() -> str:
+    global _create_animal_idx
+    animal = CREATE_ANIMALS[_create_animal_idx % len(CREATE_ANIMALS)]
+    _create_animal_idx += 1
+    return f"owo team add {animal}"
 
 # ─── Anti-detect send ─────────────────────────────────────────────────────────
 async def smart_send(channel, cmd: str):
@@ -262,10 +241,9 @@ async def farm_command(channel, cmd_info):
             await asyncio.sleep(delay * random.uniform(0.5, 0.9))
             continue
 
-        # Build actual command (gambling uses random command, amount, and side)
         actual_cmd = cmd
-        if name == "Gambling":
-            actual_cmd = build_gambling_command()
+        if name == "Create":
+            actual_cmd = build_create_command()
 
         try:
             await smart_send(channel, actual_cmd)
@@ -292,11 +270,10 @@ async def farm_command(channel, cmd_info):
             log_activity(f"Send err: {e}", "warn")
             await asyncio.sleep(10)
 
-        # Gambling waits randomly 3, 4, or 5 minutes. Other commands use jitter.
-        if name == "Gambling":
-            await asyncio.sleep(random.choice(GAMBLE_DELAYS))
+        if name in ("Hunt", "Battle", "Create"):
+            await asyncio.sleep(random.choice(ACTIVITY_DELAYS))
         else:
-            jitter = random.uniform(-delay * 0.18, delay * 0.22)
+            jitter = random.uniform(-delay * 0.08, delay * 0.08)
             await asyncio.sleep(max(15, delay + jitter))
 
         # Human break every ~90 min, except manual warning pauses
@@ -316,7 +293,7 @@ async def farm_command(channel, cmd_info):
 # ─── Startup ──────────────────────────────────────────────────────────────────
 async def startup(channel, client):
     await asyncio.sleep(8)
-    log_activity("Startup: only daily, pray, and gambling enabled", "info")
+    log_activity("Startup: daily, pray, hunt, battle, and team create enabled", "info")
 
 # ─── Bot core ─────────────────────────────────────────────────────────────────
 def run_bot():

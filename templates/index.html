@@ -112,13 +112,13 @@
 
 <header>
   <h1>OWO Auto-Farmer</h1>
-  <p>Daily · Pray every 6 min · Random Gambling · Manual captcha pause</p>
+  <p>Daily · Pray 5.1 min · Hunt/Battle/Create 4–5 min · Manual captcha pause</p>
 </header>
 
 <div class="srow">
   <div class="pill"><div class="dot" id="dot"></div><span id="stext">Loading…</span></div>
-  <div class="pill"><div class="dot on" id="tdot"></div><span id="tlabel">Mode: Daily/Pray/Gamble</span></div>
-  <div class="pill gold"><span id="streak-pill">Pray: 6 min</span></div>
+  <div class="pill"><div class="dot on" id="tdot"></div><span id="tlabel">Mode: Daily/Pray/Hunt/Battle</span></div>
+  <div class="pill gold"><span id="streak-pill">Pray: 5.1 min</span></div>
   <div class="pill blue"><span id="wpn-pill">Captcha pause ON</span></div>
   <div class="pill"><div class="dot on"></div>Manual Resume ON</div>
 </div>
@@ -144,8 +144,8 @@
 <div class="g g5">
   <div class="card"><div class="lbl">Real Cowony</div><div class="val green" id="s-cowony">0</div><div class="sub">tracked from OWO</div></div>
   <div class="card"><div class="lbl">Daily Rate</div><div class="val gold" id="s-rate">0</div><div class="sub">cowony/day</div></div>
-  <div class="card"><div class="lbl">Commands Sent</div><div class="val purple" id="s-xp">0</div><div class="sub">daily/pray/gamble</div></div>
-  <div class="card"><div class="lbl">Gambling Runs</div><div class="val green" id="s-won">0</div><div class="sub" id="s-lost-sub">random slots/coinflip</div></div>
+  <div class="card"><div class="lbl">Commands Sent</div><div class="val purple" id="s-xp">0</div><div class="sub">daily/pray/hunt/battle</div></div>
+  <div class="card"><div class="lbl">Hunt Runs</div><div class="val green" id="s-won">0</div><div class="sub" id="s-lost-sub">every 4–5 min</div></div>
   <div class="card"><div class="lbl">Uptime</div><div class="val blue" id="s-uptime">—</div><div class="sub">hh:mm:ss</div></div>
 </div>
 
@@ -158,7 +158,7 @@
     </div>
     <div class="sub">owo daily</div>
   </div>
-  <div class="card"><div class="lbl">Pray Runs</div><div class="val" id="s-wpn" style="color:#58a6ff">0</div><div class="sub">every 6 min</div></div>
+  <div class="card"><div class="lbl">Pray Runs</div><div class="val" id="s-wpn" style="color:#58a6ff">0</div><div class="sub">every 5.1 min</div></div>
   <div class="card"><div class="lbl">Paused</div><div class="val green" id="s-animals">No</div><div class="sub">captcha/manual</div></div>
   <div class="card"><div class="lbl">Last Command</div><div class="val gold" id="s-loot" style="font-size:.9rem">—</div><div class="sub">latest send</div></div>
 </div>
@@ -169,12 +169,12 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px">
       <div>
         <div class="lbl">Active Commands</div>
-        <div style="font-size:.8rem;color:#6e7681;margin-top:1px">Only owo daily, owo pray, owo slots, and owo coinflip can be sent.</div>
+        <div style="font-size:.8rem;color:#6e7681;margin-top:1px">Only owo daily, owo pray, owo hunt, owo battle, and owo team add (create) are sent.</div>
       </div>
       <div id="team-badge" style="font-size:.74rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#0f2d1a;color:#3fb950;border:1px solid #3fb95044">Limited mode</div>
     </div>
     <div class="team-wrap" id="team-panel">
-      <div style="color:#8b949e;font-size:.8rem;padding:6px 0">Zoo, hunt, fish, battle, team, weapons, lootbox, work, crime, sell, weekly, checklist, curse are disabled.</div>
+      <div style="color:#8b949e;font-size:.8rem;padding:6px 0">Gambling, fish, zoo, lootbox, work, crime, sell, weekly, checklist, curse, and weapons are disabled.</div>
     </div>
   </div>
 </div>
@@ -188,12 +188,14 @@
     <div class="ii"><span class="il">Last sent:</span><span class="iv" id="i-last">—</span></div>
     <button class="lo" onclick="doLogout()">Logout</button>
     <div class="adr">
-      <span class="badge bg">✓ Daily</span>
-      <span class="badge bg">✓ Pray 6m</span>
-      <span class="badge bg">✓ Random Gambling</span>
+      <span class="badge bg">✓ Daily 13h</span>
+      <span class="badge bg">✓ Pray 5.1m</span>
+      <span class="badge bg">✓ Hunt 4–5m</span>
+      <span class="badge bg">✓ Battle 4–5m</span>
+      <span class="badge bg">✓ Create 4–5m</span>
       <span class="badge bg">✓ 5s Min Gap</span>
       <span class="badge bg">✓ Rate-Limit Aware</span>
-      <span class="badge bp" id="b-team">✓ No Battle/Zoo</span>
+      <span class="badge bp" id="b-team">✓ No Gambling</span>
       <span class="badge bp">✓ Captcha Warning Pause</span>
       <span class="badge bp">✓ Resume with owo start</span>
       <span class="badge bp">✓ Real Cowony Track</span>
@@ -232,11 +234,13 @@
 
 <script>
 const META = {
-  Gambling: {t:'tbp',cd:'3/4/5 min',c:'#bc8cff'},
-  Pray:     {t:'tbg',cd:'6 min', c:'#3fb950'},
-  Daily:    {t:'tbb',cd:'13 hrs',c:'#e3b341'},
+  Hunt:   {t:'tbg',cd:'4–5 min',c:'#3fb950'},
+  Battle: {t:'tbp',cd:'4–5 min',c:'#bc8cff'},
+  Create: {t:'tbp',cd:'4–5 min',c:'#58a6ff'},
+  Pray:   {t:'tbg',cd:'5.1 min',c:'#3fb950'},
+  Daily:  {t:'tbb',cd:'13 hrs', c:'#e3b341'},
 };
-const CAT={'tbg':'PRAY','tbp':'GAMBLE','tbb':'BONUS','tbs':'CMD'};
+const CAT={'tbg':'FARM','tbp':'BATTLE','tbb':'BONUS','tbs':'CMD'};
 const ST={
   online:      {c:'on',  l:'Online — Farming Active'},
   connecting:  {c:'pend',l:'Connecting…'},
@@ -274,10 +278,10 @@ async function refresh(){
   const tdot=document.getElementById('tdot');
   tb.textContent='Limited mode';
   tb.style.cssText='font-size:.74rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#0f2d1a;color:#3fb950;border:1px solid #3fb95044';
-  tl.textContent='Mode: Daily/Pray/Gamble';
+  tl.textContent='Mode: Daily/Pray/Hunt/Battle';
   tdot.className='dot on';
-  bt.textContent='✓ No Battle/Zoo';
-  document.getElementById('streak-pill').textContent='Pray: 6 min';
+  bt.textContent='✓ No Gambling';
+  document.getElementById('streak-pill').textContent='Pray: 5.1 min';
   document.getElementById('wpn-pill').textContent='Captcha pause ON';
 
   // channel modal
@@ -306,8 +310,8 @@ async function refresh(){
   document.getElementById('s-rate').textContent=fmt(rate);
   const stats=d.command_stats||{};
   document.getElementById('s-xp').textContent=fmt(d.total_commands);
-  document.getElementById('s-won').textContent=fmt(stats.Gambling||0);
-  document.getElementById('s-lost-sub').textContent='random slots/coinflip';
+  document.getElementById('s-won').textContent=fmt(stats.Hunt||0);
+  document.getElementById('s-lost-sub').textContent='battle: '+fmt(stats.Battle||0)+' · create: '+fmt(stats.Create||0);
   document.getElementById('s-streak').textContent=fmt(stats.Daily||0);
   document.getElementById('s-wpn').textContent=fmt(stats.Pray||0);
   document.getElementById('s-animals').textContent=d.paused?'Yes':'No';
@@ -321,7 +325,7 @@ async function refresh(){
   document.getElementById('i-last').textContent=d.last_command_time||'—';
 
   // command panel
-  document.getElementById('team-panel').innerHTML='<div style="color:#8b949e;font-size:.8rem;padding:6px 0">Zoo, hunt, fish, battle, team, weapons, lootbox, work, crime, sell, weekly, checklist, curse are disabled.</div>';
+  document.getElementById('team-panel').innerHTML='<div style="color:#8b949e;font-size:.8rem;padding:6px 0">Gambling, fish, zoo, lootbox, work, crime, sell, weekly, checklist, curse, and weapons are disabled.</div>';
 
   // activity log
   const acts=d.activity_log||[];
@@ -347,7 +351,7 @@ async function refresh(){
     const m=META[name]||{t:'tbs',cd:'—',c:'#6e7681'};
     const p=Math.round(stats[name]/maxV*100);
     return`<tr>
-      <td style="font-family:monospace;font-size:.76rem;font-weight:600;color:#e6edf3">owo ${name.toLowerCase()}</td>
+      <td style="font-family:monospace;font-size:.76rem;font-weight:600;color:#e6edf3">${name==='Create'?'owo team add':('owo '+name.toLowerCase())}</td>
       <td><span class="tbadge ${m.t}">${CAT[m.t]||'CMD'}</span></td>
       <td style="color:#3fb950;font-weight:700">${fmt(stats[name])}</td>
       <td style="color:#6e7681">${m.cd}</td>
