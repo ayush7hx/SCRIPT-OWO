@@ -55,7 +55,9 @@ state = {
     "_equipping":       False,
     "_weapon_step":     0,      # 0=idle,1=waiting weapon list,2=waiting slot choice
     "_weapon_slot":     1,      # which team slot to equip to next (1-3)
+    "_weapon_pick":     1,      # best weapon number from OWO list
     "_weapon_channel":  None,   # channel ref for interactive replies
+    "_team_upgrading":  False,
 }
 
 send_lock         = None
@@ -74,8 +76,27 @@ COMMANDS = [
 ]
 
 ACTIVITY_DELAYS = [240, 270, 300]  # 4 / 4.5 / 5 minutes
-CREATE_ANIMALS = ["chipmunk", "rabbit", "mouse", "cat", "dog", "pig", "bee", "duck"]
-_create_animal_idx = 0
+MIN_UPGRADE_RARITY = 3             # rare+ triggers team swap
+
+RARITY_RANK = {
+    "common": 1, "uncommon": 2, "rare": 3, "epic": 4, "mythic": 5, "fabled": 6,
+}
+
+TEAM_ANIMALS = [
+    "chipmunk", "rabbit", "rabbit2", "mouse", "mouse2", "cat", "cat2", "dog", "dog2",
+    "pig", "pig2", "bee", "butterfly", "snail", "beetle", "bug", "baby_chick", "chick",
+    "rooster", "sheep", "duck", "frog", "cow", "cow2", "horse", "hamster", "parrot",
+    "otter", "penguin", "panda", "fox", "bear", "wolf", "deer", "shrimp", "lion",
+    "tiger", "tiger2", "monkey", "eagle", "owl", "camel", "crocodile", "shark",
+    "whale", "whale2", "dolphin", "turtle", "elephant", "giraffe", "zebra", "gorilla",
+    "gfox", "gshrimp", "gdeer", "gcamel", "gcat", "gdog", "gbear",
+]
+
+WEAPON_RARITY_SCORES = [
+    ("fabled", 6), ("mythic", 5), ("epic", 4), ("rare", 3), ("uncommon", 2), ("common", 1),
+    (":pw", 5), (":pe", 4), (":pr", 3), (":pu", 2), (":pc", 1),
+    (":m", 5), (":e", 4), (":r", 3), (":u", 2), (":c", 1),
+]
 
 CAPTCHA_WARNING_PATTERNS = [
     "captcha", "verification", "verify that you are human", "are you a human",
@@ -133,11 +154,168 @@ def is_owo_warning(text: str) -> bool:
     low = text.lower()
     return any(pattern in low for pattern in CAPTCHA_WARNING_PATTERNS)
 
-def build_create_command() -> str:
-    global _create_animal_idx
-    animal = CREATE_ANIMALS[_create_animal_idx % len(CREATE_ANIMALS)]
-    _create_animal_idx += 1
-    return f"owo team add {animal}"
+def rarity_score(name: str) -> int:
+    return RARITY_RANK.get((name or "").lower(), 0)
+
+def score_weapon_text(text: str) -> int:
+    low = text.lower()
+    best = 0
+    for pattern, score in WEAPON_RARITY_SCORES:
+        if pattern in low:
+            best = max(best, score)
+    return best
+
+def parse_weapon_list(text: str) -> list:
+    options = []
+    for m in re.finditer(r'^(\d+)\.\s*(.+)$', text, re.M):
+        num = int(m.group(1))
+        if num > 25:
+            continue
+        options.append((num, score_weapon_text(m.group(2))))
+    return options
+
+def parse_hunt_catch(text: str):
+    m = re.search(
+        r'caught an? (common|uncommon|rare|epic|mythic|fabled)\s+:\w+:\s*:(\w+):',
+        text, re.I,
+    )
+    if m:
+        return m.group(2).lower(), RARITY_RANK.get(m.group(1).lower(), 0)
+    return None, 0
+
+def parse_battle_team(text: str) -> list:
+    team = []
+    for m in re.finditer(r'L\.\s*(\d+)\s*:(\w+):\s*-\s*(.*?)(?:\n|$)', text):
+        weapon = m.group(3).strip()
+        team.append({
+            "emoji":      m.group(2),
+            "level":      int(m.group(1)),
+            "has_weapon": weapon != "no weapon" and bool(weapon),
+            "rarity":     1,
+            "weapon_score": score_weapon_text(weapon),
+        })
+    return team
+
+def weakest_team_member(team: list):
+    if not team:
+        return None
+    return min(team, key=lambda a: (a.get("rarity", 1), a.get("level", 0)))
+
+# ─── Team auto-management ─────────────────────────────────────────────────────
+async def auto_create_team(channel):
+    if state["_team_creating"]:
+        return
+    state["_team_creating"] = True
+    state["team_ready"]     = False
+    log_activity("Auto-creating battle team...", "info")
+
+    slots = len(state.get("team_animals", []))
+    for animal in TEAM_ANIMALS:
+        if slots >= 3:
+            break
+        state["_team_add_ok"] = False
+        log_activity(f"Team slot {slots + 1}: trying '{animal}'", "info")
+        try:
+            await smart_send(channel, f"owo team add {animal}")
+            await asyncio.sleep(random.uniform(6, 10))
+        except Exception as e:
+            log_activity(f"Team add err: {e}", "warn")
+            await asyncio.sleep(3)
+            continue
+
+        if state["_team_add_ok"]:
+            slots += 1
+            state["team_ready"] = True
+            log_activity(f"'{animal}' added! Slots: {slots}/3", "earn")
+
+    state["_team_creating"] = False
+    if state["team_ready"]:
+        log_activity(f"Battle team ready! ({slots} animals)", "earn")
+        await asyncio.sleep(3)
+        await auto_equip_weapons(channel)
+    else:
+        log_activity("No animals to add — hunt first to catch some!", "warn")
+
+async def auto_upgrade_team(channel, animal: str, rarity: int):
+    if state["_team_upgrading"] or state["_team_creating"] or state["_equipping"]:
+        return
+    if rarity < MIN_UPGRADE_RARITY:
+        return
+
+    state["_team_upgrading"] = True
+    try:
+        team = state.get("team_animals", [])
+        if len(team) < 3:
+            state["_team_add_ok"] = False
+            await smart_send(channel, f"owo team add {animal}")
+            await asyncio.sleep(random.uniform(5, 8))
+            if state["_team_add_ok"]:
+                log_activity(f"Added rare {animal} to team", "earn")
+                await auto_equip_weapons(channel)
+            return
+
+        weakest = weakest_team_member(team)
+        if not weakest:
+            return
+        old_score = (weakest.get("rarity", 1), weakest.get("level", 0))
+        new_score = (rarity, 0)
+        if new_score <= old_score:
+            return
+
+        old = weakest["emoji"]
+        log_activity(f"Swapping {old} → {animal} (better rarity)", "earn")
+        await smart_send(channel, f"owo team remove {old}")
+        await asyncio.sleep(random.uniform(4, 7))
+        state["_team_add_ok"] = False
+        await smart_send(channel, f"owo team add {animal}")
+        await asyncio.sleep(random.uniform(5, 8))
+        if state["_team_add_ok"]:
+            await auto_equip_weapons(channel)
+    finally:
+        state["_team_upgrading"] = False
+
+async def auto_equip_weapons(channel):
+    """Equip best available weapon to each team slot (replaces old weapon via OWO flow)."""
+    if state["_equipping"]:
+        return
+    state["_equipping"]      = True
+    state["_weapon_channel"] = channel
+
+    team = state.get("team_animals", [])
+    slots_order = [1, 2, 3]
+    if team:
+        no_wpn = [i + 1 for i, a in enumerate(team) if not a.get("has_weapon")]
+        has_wpn = [i + 1 for i, a in enumerate(team) if a.get("has_weapon")]
+        slots_order = no_wpn + has_wpn or [1, 2, 3]
+
+    log_activity("Auto-equipping best weapons...", "info")
+    equipped = 0
+
+    for slot in slots_order:
+        state["_weapon_step"] = 1
+        state["_weapon_slot"] = slot
+        state["_weapon_pick"] = 1
+        try:
+            await smart_send(channel, "owo weapon equip")
+        except Exception as e:
+            log_activity(f"Weapon equip send err: {e}", "warn")
+            break
+
+        for _ in range(25):
+            await asyncio.sleep(1)
+            if state["_weapon_step"] == 0:
+                equipped += 1
+                break
+        if state["_weapon_step"] != 0:
+            state["_weapon_step"] = 0
+            log_activity("No more weapons to equip", "info")
+            break
+        await asyncio.sleep(random.uniform(3, 6))
+
+    state["_equipping"]      = False
+    state["_weapon_channel"] = None
+    if equipped:
+        log_activity(f"Weapons updated on {equipped} slot(s)", "earn")
 
 # ─── Anti-detect send ─────────────────────────────────────────────────────────
 async def smart_send(channel, cmd: str):
@@ -207,6 +385,139 @@ async def handle_owo_message(message, channel, client):
         state["quests_completed"] += 1
         log_activity("Quest completed!", "earn")
 
+    # ── Battle result ───────────────────────────────────────────────────────────
+    if "goes into battle" in low:
+        xp     = parse_xp(full)
+        streak = parse_streak(full)
+        if xp > 0:
+            state["total_xp"] += xp
+        if streak >= 0:
+            state["battle_streak"] = streak
+
+        parsed = parse_battle_team(full)
+        if parsed:
+            sections = full.split("\n")
+            my_team  = []
+            in_my    = False
+            for line in sections:
+                if "goes into battle" in line.lower():
+                    in_my = True
+                if in_my and "enemy team" in line.lower():
+                    break
+                if in_my:
+                    for mt in parsed:
+                        if mt["emoji"] in line and mt not in my_team:
+                            my_team.append(mt)
+            state["team_animals"] = my_team[:3] if my_team else parsed[:3]
+            state["team_ready"]   = True
+
+        if "you won" in low or "won in" in low:
+            state["battles_won"] += 1
+            log_activity(f"Battle won! +{xp:,}xp | Streak {state['battle_streak']}", "earn")
+        elif "you lost" in low or "lost in" in low:
+            state["battles_lost"] += 1
+            log_activity(f"Battle lost. +{xp:,}xp", "info")
+
+        no_weapons = state["team_animals"] and all(
+            not a.get("has_weapon") for a in state["team_animals"]
+        )
+        if no_weapons and not state["_equipping"]:
+            client.loop.create_task(auto_equip_weapons(channel))
+
+    # ── Team detection from OWO responses ─────────────────────────────────────
+    level_matches = re.findall(r'L\.\s*(\d+)\s*:(\w+):', full)
+    if level_matches and not state["team_ready"]:
+        state["team_ready"]     = True
+        state["_team_add_ok"]   = True
+        state["_team_creating"] = False
+        log_activity("Team detected from OWO response!", "earn")
+
+    team_success = (
+        any(p in low for p in ("added", "successfully", "joined your team",
+                               "is now on your team", "battle team", "team member"))
+        and "team" in low
+    )
+    if team_success:
+        state["_team_add_ok"] = True
+        state["team_ready"]   = True
+        if not level_matches:
+            log_activity("Animal added to team!", "earn")
+
+    if "team is full" in low or "already on your team" in low or "already in your team" in low:
+        state["_team_add_ok"]   = True
+        state["team_ready"]      = True
+        state["_team_creating"]  = False
+        log_activity("Team already exists / is full!", "earn")
+
+    if "could not find this animal" in low or "do not own this animal" in low:
+        state["_team_add_ok"] = False
+
+    if "do not have an active battle team" in low:
+        log_activity("No battle team! Auto-creating...", "warn")
+        state["team_ready"] = False
+        if not state["_team_creating"]:
+            client.loop.create_task(auto_create_team(channel))
+
+    # ── Weapon equip interactive flow ─────────────────────────────────────────
+    if state["_weapon_step"] == 1:
+        options = parse_weapon_list(full)
+        weapon_list = options or (
+            re.search(r'1\.\s*\*{0,2}.{1,40}\*{0,2}', full) or
+            "select" in low or "choose" in low or
+            ("1." in full and ("weapon" in low or "equip" in low or "inventory" in low))
+        )
+        if weapon_list:
+            if options:
+                state["_weapon_pick"] = max(options, key=lambda x: x[1])[0]
+                log_activity(f"Best weapon picked (#{state['_weapon_pick']})", "info")
+            else:
+                state["_weapon_pick"] = 1
+            state["_weapon_step"] = 2
+            ch = state.get("_weapon_channel")
+            if ch:
+                await asyncio.sleep(random.uniform(1.5, 3.0))
+                await ch.send(str(state["_weapon_pick"]))
+                log_activity(f"Weapon equip: sent weapon #{state['_weapon_pick']}", "info")
+
+    elif state["_weapon_step"] == 2:
+        slot_prompt = (
+            "which team member" in low or "which slot" in low or
+            "which animal" in low or "pick a slot" in low or
+            "team slot" in low or ("1." in full and "2." in full and "team" in low)
+        )
+        if slot_prompt:
+            slot = state.get("_weapon_slot", 1)
+            ch   = state.get("_weapon_channel")
+            if ch:
+                await asyncio.sleep(random.uniform(1.5, 3.0))
+                await ch.send(str(slot))
+                log_activity(f"Weapon equip: slot {slot}", "info")
+            state["_weapon_step"] = 0
+
+    if "equipped" in low and any(w in low for w in (
+        "weapon", "sword", "staff", "bow", "wand", "gun", "axe", "shield", "claw",
+    )):
+        state["weapons_equipped"] += 1
+        state["_weapon_step"] = 0
+        for a in state.get("team_animals", []):
+            if state.get("_weapon_slot", 1) <= len(state["team_animals"]):
+                idx = state["_weapon_slot"] - 1
+                if idx < len(state["team_animals"]):
+                    state["team_animals"][idx]["has_weapon"] = True
+        log_activity("Weapon equipped on team!", "earn")
+
+    # ── Hunt catch → upgrade team on rare+ ────────────────────────────────────
+    if "spent" in low and "caught" in low:
+        xp = parse_xp(full)
+        if xp > 0:
+            state["total_xp"] += xp
+        state["animals_caught"] += 1
+        animal, rarity = parse_hunt_catch(full)
+        if animal and rarity >= MIN_UPGRADE_RARITY:
+            rlabel = next((k for k, v in RARITY_RANK.items() if v == rarity), "?")
+            log_activity(f"Rare catch: {animal} ({rlabel})", "earn")
+            client.loop.create_task(auto_upgrade_team(channel, animal, rarity))
+
 # ─── Per-command farming loop ─────────────────────────────────────────────────
 async def farm_command(channel, cmd_info):
     cmd   = cmd_info["cmd"]
@@ -216,6 +527,9 @@ async def farm_command(channel, cmd_info):
     # Stagger startup so all loops don't fire at once
     idx = COMMANDS.index(cmd_info)
     await asyncio.sleep(random.uniform(idx * 10 + 8, idx * 15 + 35))
+
+    if name == "Battle":
+        await asyncio.sleep(45)
 
     break_counter = 0
 
@@ -243,7 +557,13 @@ async def farm_command(channel, cmd_info):
 
         actual_cmd = cmd
         if name == "Create":
-            actual_cmd = build_create_command()
+            if state["team_ready"] or state["_team_creating"]:
+                await asyncio.sleep(random.choice(ACTIVITY_DELAYS))
+                continue
+            await auto_create_team(channel)
+            state["command_stats"][name] = state["command_stats"].get(name, 0) + 1
+            await asyncio.sleep(random.choice(ACTIVITY_DELAYS))
+            continue
 
         try:
             await smart_send(channel, actual_cmd)
@@ -293,7 +613,9 @@ async def farm_command(channel, cmd_info):
 # ─── Startup ──────────────────────────────────────────────────────────────────
 async def startup(channel, client):
     await asyncio.sleep(8)
-    log_activity("Startup: daily, pray, hunt, battle, and team create enabled", "info")
+    log_activity("Startup: auto team & weapon management enabled", "info")
+    if not state["team_ready"] and not state["_team_creating"]:
+        await auto_create_team(channel)
 
 # ─── Bot core ─────────────────────────────────────────────────────────────────
 def run_bot():
@@ -337,7 +659,8 @@ def run_bot():
                 "battles_lost": 0, "total_xp": 0, "team_animals": [],
                 "weapons_equipped": 0, "_cooldowns": {},
                 "_team_creating": False, "_team_add_ok": False, "_equipping": False,
-                "_weapon_step": 0, "_weapon_slot": 1, "_weapon_channel": None,
+                "_weapon_step": 0, "_weapon_slot": 1, "_weapon_pick": 1,
+                "_weapon_channel": None, "_team_upgrading": False,
             })
 
             log_activity(f"Online as {client.user}", "info")
@@ -467,7 +790,8 @@ def stats():
     d["last_command_time"] = (state["last_command_time"].strftime("%H:%M:%S")
                                if state["last_command_time"] else "—")
     for k in ("token", "_cooldowns", "_team_creating", "_team_add_ok", "_equipping",
-               "_weapon_step", "_weapon_slot", "_weapon_channel"):
+               "_weapon_step", "_weapon_slot", "_weapon_pick", "_weapon_channel",
+               "_team_upgrading"):
         d.pop(k, None)
     return jsonify(d)
 

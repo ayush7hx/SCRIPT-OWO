@@ -112,7 +112,7 @@
 
 <header>
   <h1>OWO Auto-Farmer</h1>
-  <p>Daily · Pray 5.1 min · Hunt/Battle/Create 4–5 min · Manual captcha pause</p>
+  <p>Daily · Pray 5.1m · Hunt/Battle 4–5m · Auto Team & Weapons</p>
 </header>
 
 <div class="srow">
@@ -145,7 +145,7 @@
   <div class="card"><div class="lbl">Real Cowony</div><div class="val green" id="s-cowony">0</div><div class="sub">tracked from OWO</div></div>
   <div class="card"><div class="lbl">Daily Rate</div><div class="val gold" id="s-rate">0</div><div class="sub">cowony/day</div></div>
   <div class="card"><div class="lbl">Commands Sent</div><div class="val purple" id="s-xp">0</div><div class="sub">daily/pray/hunt/battle</div></div>
-  <div class="card"><div class="lbl">Hunt Runs</div><div class="val green" id="s-won">0</div><div class="sub" id="s-lost-sub">every 4–5 min</div></div>
+  <div class="card"><div class="lbl">Battles Won</div><div class="val green" id="s-won">0</div><div class="sub" id="s-lost-sub">streak: 0</div></div>
   <div class="card"><div class="lbl">Uptime</div><div class="val blue" id="s-uptime">—</div><div class="sub">hh:mm:ss</div></div>
 </div>
 
@@ -159,7 +159,7 @@
     <div class="sub">owo daily</div>
   </div>
   <div class="card"><div class="lbl">Pray Runs</div><div class="val" id="s-wpn" style="color:#58a6ff">0</div><div class="sub">every 5.1 min</div></div>
-  <div class="card"><div class="lbl">Paused</div><div class="val green" id="s-animals">No</div><div class="sub">captcha/manual</div></div>
+  <div class="card"><div class="lbl">Animals Caught</div><div class="val green" id="s-animals">0</div><div class="sub">from hunt</div></div>
   <div class="card"><div class="lbl">Last Command</div><div class="val gold" id="s-loot" style="font-size:.9rem">—</div><div class="sub">latest send</div></div>
 </div>
 
@@ -169,12 +169,12 @@
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px">
       <div>
         <div class="lbl">Active Commands</div>
-        <div style="font-size:.8rem;color:#6e7681;margin-top:1px">Only owo daily, owo pray, owo hunt, owo battle, and owo team add (create) are sent.</div>
+        <div style="font-size:.8rem;color:#6e7681;margin-top:1px">Daily, pray, hunt, battle + auto team swap (rare+) & best weapon equip.</div>
       </div>
       <div id="team-badge" style="font-size:.74rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#0f2d1a;color:#3fb950;border:1px solid #3fb95044">Limited mode</div>
     </div>
     <div class="team-wrap" id="team-panel">
-      <div style="color:#8b949e;font-size:.8rem;padding:6px 0">Gambling, fish, zoo, lootbox, work, crime, sell, weekly, checklist, curse, and weapons are disabled.</div>
+      <div style="color:#8b949e;font-size:.8rem;padding:6px 0">Checking team… bot will auto-create & equip weapons.</div>
     </div>
   </div>
 </div>
@@ -192,10 +192,12 @@
       <span class="badge bg">✓ Pray 5.1m</span>
       <span class="badge bg">✓ Hunt 4–5m</span>
       <span class="badge bg">✓ Battle 4–5m</span>
-      <span class="badge bg">✓ Create 4–5m</span>
+      <span class="badge bg">✓ Auto Team</span>
+      <span class="badge bg">✓ Rare Swap</span>
+      <span class="badge bg">✓ Best Weapons</span>
       <span class="badge bg">✓ 5s Min Gap</span>
       <span class="badge bg">✓ Rate-Limit Aware</span>
-      <span class="badge bp" id="b-team">✓ No Gambling</span>
+      <span class="badge bp" id="b-team">✓ Team Mgmt ON</span>
       <span class="badge bp">✓ Captcha Warning Pause</span>
       <span class="badge bp">✓ Resume with owo start</span>
       <span class="badge bp">✓ Real Cowony Track</span>
@@ -236,7 +238,7 @@
 const META = {
   Hunt:   {t:'tbg',cd:'4–5 min',c:'#3fb950'},
   Battle: {t:'tbp',cd:'4–5 min',c:'#bc8cff'},
-  Create: {t:'tbp',cd:'4–5 min',c:'#58a6ff'},
+  Create: {t:'tbs',cd:'auto',c:'#58a6ff'},
   Pray:   {t:'tbg',cd:'5.1 min',c:'#3fb950'},
   Daily:  {t:'tbb',cd:'13 hrs', c:'#e3b341'},
 };
@@ -276,12 +278,18 @@ async function refresh(){
   // active mode
   const tb=document.getElementById('team-badge'),tl=document.getElementById('tlabel'),bt=document.getElementById('b-team');
   const tdot=document.getElementById('tdot');
-  tb.textContent='Limited mode';
-  tb.style.cssText='font-size:.74rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#0f2d1a;color:#3fb950;border:1px solid #3fb95044';
-  tl.textContent='Mode: Daily/Pray/Hunt/Battle';
+  tl.textContent='Mode: Daily/Pray/Hunt/Battle + Auto Team';
   tdot.className='dot on';
-  bt.textContent='✓ No Gambling';
-  document.getElementById('streak-pill').textContent='Pray: 5.1 min';
+  if(d.team_ready){
+    tb.textContent='Team Ready ✓';
+    tb.style.cssText='font-size:.74rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#0f2d1a;color:#3fb950;border:1px solid #3fb95044';
+    bt.textContent='✓ Team Active';
+  }else{
+    tb.textContent='Building Team…';
+    tb.style.cssText='font-size:.74rem;font-weight:700;padding:3px 10px;border-radius:999px;background:#1a1200;color:#e3b341;border:1px solid #e3b34144';
+    bt.textContent='⏳ Auto-Create';
+  }
+  document.getElementById('streak-pill').textContent='Weapons: '+fmt(d.weapons_equipped||0);
   document.getElementById('wpn-pill').textContent='Captcha pause ON';
 
   // channel modal
@@ -310,11 +318,11 @@ async function refresh(){
   document.getElementById('s-rate').textContent=fmt(rate);
   const stats=d.command_stats||{};
   document.getElementById('s-xp').textContent=fmt(d.total_commands);
-  document.getElementById('s-won').textContent=fmt(stats.Hunt||0);
-  document.getElementById('s-lost-sub').textContent='battle: '+fmt(stats.Battle||0)+' · create: '+fmt(stats.Create||0);
+  document.getElementById('s-won').textContent=fmt(d.battles_won||0);
+  document.getElementById('s-lost-sub').textContent='streak: '+(d.battle_streak||0)+' · lost: '+(d.battles_lost||0);
   document.getElementById('s-streak').textContent=fmt(stats.Daily||0);
   document.getElementById('s-wpn').textContent=fmt(stats.Pray||0);
-  document.getElementById('s-animals').textContent=d.paused?'Yes':'No';
+  document.getElementById('s-animals').textContent=fmt(d.animals_caught||0);
   document.getElementById('s-loot').textContent=d.last_command||'—';
   document.getElementById('s-uptime').textContent=fmtT(d.uptime_seconds);
 
@@ -325,7 +333,17 @@ async function refresh(){
   document.getElementById('i-last').textContent=d.last_command_time||'—';
 
   // command panel
-  document.getElementById('team-panel').innerHTML='<div style="color:#8b949e;font-size:.8rem;padding:6px 0">Gambling, fish, zoo, lootbox, work, crime, sell, weekly, checklist, curse, and weapons are disabled.</div>';
+  const animals=d.team_animals||[];
+  const panel=document.getElementById('team-panel');
+  if(!animals.length){
+    panel.innerHTML=`<div style="color:#8b949e;font-size:.8rem;padding:6px 0">${d.team_ready?'Team active — animals show after next battle':'Bot is auto-creating your battle team…'}</div>`;
+  }else{
+    panel.innerHTML=animals.map(a=>{
+      const em=EMOJI[a.emoji]||'🐾';
+      const wpn=a.has_weapon?'<span class="wpn-badge">⚔️</span>':'<span class="no-wpn">no wpn</span>';
+      return`<div class="ac">${wpn}<div class="ac-emoji">${em}</div><div class="ac-level">Lv.${a.level||'?'}</div><div class="ac-name">${a.emoji}</div></div>`;
+    }).join('');
+  }
 
   // activity log
   const acts=d.activity_log||[];
